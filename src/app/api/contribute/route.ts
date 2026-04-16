@@ -4,18 +4,18 @@ import { createAppAuth } from '@octokit/auth-app';
 
 // ---------------------------------------------------------
 // 🚨 Vercel 环境变量说明：
-// 1. GITHUB_APP_ID: 机器人的 App ID (6-7位数字)
-// 2. GITHUB_PRIVATE_KEY: 下载的 .pem 文件的全部文本
-// 3. GITHUB_INSTALLATION_ID: 安装后的 ID (一串数字)
-// 4. GITHUB_REPO_OWNER: 你的 GitHub 用户名 (如 chuanyue98)
-// 5. GITHUB_REPO_NAME: 仓库名 (如 prompt-gallery)
+// 1. APP_ID: 机器人的 App ID (6-7位数字)
+// 2. PRIVATE_KEY: 下载的 .pem 文件的全部文本
+// 3. INSTALLATION_ID: 安装后的 ID (一串数字)
+// 4. REPO_OWNER: 你的 GitHub 用户名 (如 chuanyue98)
+// 5. REPO_NAME: 仓库名 (如 prompt-gallery)
 // ---------------------------------------------------------
 
-const APP_ID = process.env.GITHUB_APP_ID;
-const PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY;
-const INSTALLATION_ID = process.env.GITHUB_INSTALLATION_ID;
-const REPO_OWNER = process.env.GITHUB_REPO_OWNER || 'chuanyue98';
-const REPO_NAME = process.env.GITHUB_REPO_NAME || 'prompt-gallery';
+const APP_ID = process.env.APP_ID;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const INSTALLATION_ID = process.env.INSTALLATION_ID;
+const REPO_OWNER = process.env.REPO_OWNER || 'chuanyue98';
+const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 
 export async function POST(req: NextRequest) {
   try {
