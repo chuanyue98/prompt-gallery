@@ -1,0 +1,114 @@
+[
+  {
+    "slug": "cat-godfather",
+    "title": "猫教父 - 威慑降临",
+    "description": "1940s 教父风格，低调照明，展现一只极具威慑力的猫咪形象。",
+    "tags": [
+      "教父",
+      "写实",
+      "动物",
+      "电影感"
+    ],
+    "model": "Seedance 2.0",
+    "ratio": "16:9",
+    "seed": 88776655,
+    "media": [
+      {
+        "type": "video",
+        "src": "output.mp4",
+        "cover": "cover.png"
+      }
+    ],
+    "content": "\r\n### 提示词 (Prompt)\r\n12秒电影级写实短片。1940s教父风格，低调照明。一只穿着精致西装的黑猫坐在巨大的办公桌后，眼神深邃且充满威慑力，周围烟雾缭绕。\r\n",
+    "mediaPath": "/data/cat-godfather/"
+  },
+  {
+    "slug": "cat-watchmaker",
+    "title": "猫咪钟表匠 - 匠心独运",
+    "description": "超写实微缩场景，展现一只毛茸茸的猫咪扮演一丝不苟的钟表匠。",
+    "tags": [
+      "猫咪",
+      "匠人",
+      "微缩",
+      "写实"
+    ],
+    "model": "Seedance 2.0 / Midjourney",
+    "ratio": "16:9",
+    "media": [
+      {
+        "type": "image",
+        "src": "cover.png",
+        "cover": "cover.png"
+      }
+    ],
+    "content": "\r\n### 提示词 (Prompt)\r\n创建一个超写实工作室场景，画面中一只毛茸茸的猫咪扮演着一丝不苟的钟表匠。猫咪端坐在明亮的台灯下，面前是木质工作台，它戴着一副小圆眼镜，穿着迷你工作围裙，周围摆满了齿轮、钟表零件、工具和放大镜。温暖的灯光下有尘埃浮动，金属零件在灯光下闪烁。\r\n",
+    "mediaPath": "/data/cat-watchmaker/"
+  },
+  {
+    "slug": "valorant-chibi",
+    "title": "瓦洛兰特 - Q版瑞纳",
+    "description": "将游戏角色瑞纳转化为可爱的 3D 卡通风格，保留武器与服饰特征。",
+    "tags": [
+      "Valorant",
+      "Q版",
+      "3D",
+      "卡通"
+    ],
+    "model": "Midjourney / Jimeng",
+    "ratio": "1:1",
+    "media": [
+      {
+        "type": "image",
+        "src": "cover.png",
+        "cover": "cover.png"
+      }
+    ],
+    "content": "\r\n### 提示词 (Prompt)\r\n将图片改成Q版3D卡通风，保留原有的瑞纳角色主体、武器和服饰特征，角色形象可爱圆润，高品质渲染。\r\n",
+    "mediaPath": "/data/valorant-chibi/"
+  },
+  {
+    "slug": "valorant-sage",
+    "title": "瓦洛兰特 - Q版贤者",
+    "description": "将贤者 (Sage) 转化为可爱的 3D 卡通风格，保留其治愈系特征。",
+    "tags": [
+      "Valorant",
+      "Sage",
+      "Q版",
+      "3D"
+    ],
+    "model": "Midjourney / Jimeng",
+    "ratio": "1:1",
+    "media": [
+      {
+        "type": "image",
+        "src": "cover.png",
+        "cover": "cover.png"
+      }
+    ],
+    "content": "\r\n### 提示词 (Prompt)\r\n将图片改成Q版3D卡通风，保留原有的贤者角色主体、武器和服饰特征，角色形象可爱圆润，高品质渲染。\r\n",
+    "mediaPath": "/data/valorant-sage/"
+  },
+  {
+    "slug": "vampire-lady",
+    "title": "蚀月吸血姬 - 变身时刻",
+    "description": "一个充满哥特式华丽感的变身镜头，结合了日系与赛博朋克风格。",
+    "tags": [
+      "Seedance-2.0",
+      "角色",
+      "电影感",
+      "变身"
+    ],
+    "model": "Seedance 2.0",
+    "ratio": "16:9",
+    "seed": 123456789,
+    "media": [
+      {
+        "type": "video",
+        "src": "output.mp4",
+        "cover": "cover.png"
+      }
+    ],
+    "content": "\r\n### 提示词 (Prompt)\r\n15 秒电影感日剧纯爱暧昧短片，超写实画质，变身后的吸血姬（白发、精灵耳、白色华服、红指甲）从下方仰望镜头，单手向镜头伸出，仿佛在邀请或施展魔法，表情魅惑且充满危险气息。\r\n\r\n### 负面提示词 (Negative Prompt)\r\nLow quality, blurry, distorted, messy background.\r\n",
+    "mediaPath": "/data/vampire-lady/"
+  }
+]

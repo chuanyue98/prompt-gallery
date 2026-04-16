@@ -1,36 +1,11 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Prompt Gallery
 
-## Getting Started
+Curated collection of AI-generated video/image prompts.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Preview | Title | Description | Tags |
+| --- | --- | --- | --- |
+| ![](./data/cat-godfather/cover.png) | **猫教父 - 威慑降临** | 1940s 教父风格，低调照明，展现一只极具威慑力的猫咪形象。 | `教父` `写实` `动物` `电影感` |
+| ![](./data/cat-watchmaker/cover.png) | **猫咪钟表匠 - 匠心独运** | 超写实微缩场景，展现一只毛茸茸的猫咪扮演一丝不苟的钟表匠。 | `猫咪` `匠人` `微缩` `写实` |
+| ![](./data/valorant-chibi/cover.png) | **瓦洛兰特 - Q版瑞纳** | 将游戏角色瑞纳转化为可爱的 3D 卡通风格，保留武器与服饰特征。 | `Valorant` `Q版` `3D` `卡通` |
+| ![](./data/valorant-sage/cover.png) | **瓦洛兰特 - Q版贤者** | 将贤者 (Sage) 转化为可爱的 3D 卡通风格，保留其治愈系特征。 | `Valorant` `Sage` `Q版` `3D` |
+| ![](./data/vampire-lady/cover.png) | **蚀月吸血姬 - 变身时刻** | 一个充满哥特式华丽感的变身镜头，结合了日系与赛博朋克风格。 | `Seedance-2.0` `角色` `电影感` `变身` |
