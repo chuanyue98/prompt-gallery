@@ -5,10 +5,9 @@ import matter from 'gray-matter';
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const DATA_DIR = path.join(PUBLIC_DIR, 'data');
 const OUTPUT_JSON = path.join(PUBLIC_DIR, 'gallery-data.json');
-const README_FILE = path.join(process.cwd(), 'README.md');
 
 async function sync() {
-  console.log('🚀 Starting sync (from public/data)...');
+  console.log('🚀 Starting data sync (from public/data)...');
   
   if (!(await fs.exists(DATA_DIR))) {
     console.error(`❌ Data directory not found at ${DATA_DIR}`);
@@ -17,10 +16,6 @@ async function sync() {
 
   const items = await fs.readdir(DATA_DIR);
   const galleryData = [];
-
-  let readmeContent = '# Prompt Gallery\n\nCurated collection of AI-generated video/image prompts.\n\n';
-  readmeContent += '| Preview | Title | Description | Tags |\n';
-  readmeContent += '| --- | --- | --- | --- |\n';
 
   for (const slug of items) {
     const itemPath = path.join(DATA_DIR, slug);
@@ -40,17 +35,12 @@ async function sync() {
     };
 
     galleryData.push(item);
-
-    // Add to README (Link to public relative path for GitHub)
-    const cover = data.media?.[0]?.cover || 'placeholder.png';
-    const tags = data.tags?.map((t: string) => `\`${t}\``).join(' ') || '';
-    readmeContent += `| ![](.${item.mediaPath}${cover}) | **${data.title}** | ${data.description} | ${tags} |\n`;
   }
 
+  // 只写入 JSON 数据，不再修改 README.md
   await fs.writeJSON(OUTPUT_JSON, galleryData, { spaces: 2 });
-  await fs.writeFile(README_FILE, readmeContent);
 
-  console.log(`✅ Sync complete! ${galleryData.length} items processed.`);
+  console.log(`✅ Sync complete! ${galleryData.length} items integrated into gallery-data.json.`);
 }
 
 sync().catch(console.error);
