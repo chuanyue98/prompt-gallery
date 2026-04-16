@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
+import { createAppAuth } from '@octokit/auth-app';
 
-// 注意：在部署到 Vercel 时，请在环境变量中设置以下三项
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO_OWNER = process.env.GITHUB_REPO_OWNER || 'your-username';
+// ---------------------------------------------------------
+// 🚨 Vercel 环境变量说明：
+// 1. GITHUB_APP_ID: 机器人的 App ID (6-7位数字)
+// 2. GITHUB_PRIVATE_KEY: 下载的 .pem 文件的全部文本
+// 3. GITHUB_INSTALLATION_ID: 安装后的 ID (一串数字)
+// 4. GITHUB_REPO_OWNER: 你的 GitHub 用户名 (如 chuanyue98)
+// 5. GITHUB_REPO_NAME: 仓库名 (如 prompt-gallery)
+// ---------------------------------------------------------
+
+const APP_ID = process.env.GITHUB_APP_ID;
+const PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY;
+const INSTALLATION_ID = process.env.GITHUB_INSTALLATION_ID;
+const REPO_OWNER = process.env.GITHUB_REPO_OWNER || 'chuanyue98';
 const REPO_NAME = process.env.GITHUB_REPO_NAME || 'prompt-gallery';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!GITHUB_TOKEN) {
-      return NextResponse.json({ error: 'GitHub Token not configured' }, { status: 500 });
+    if (!APP_ID || !PRIVATE_KEY || !INSTALLATION_ID) {
+      return NextResponse.json({ error: 'GitHub App credentials not configured' }, { status: 500 });
     }
 
     const formData = await req.formData();
@@ -24,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. 准备数据
+    // 1. 准备文件数据
     const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30) + '-' + Math.random().toString(36).substring(7);
     const fileName = file.name;
     const fileBuffer = await file.arrayBuffer();
@@ -45,10 +56,17 @@ media:
 ${prompt}
 `;
 
-    // 2. 初始化 Octokit
-    const octokit = new Octokit({ auth: GITHUB_TOKEN });
+    // 2. 初始化以机器人身份进行认证
+    const octokit = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: APP_ID,
+        privateKey: PRIVATE_KEY,
+        installationId: INSTALLATION_ID,
+      },
+    });
 
-    // 3. 获取主分支最新的 SHA
+    // 3. 获取主分支 SHA
     const { data: mainRef } = await octokit.rest.git.getRef({
       owner: REPO_OWNER,
       repo: REPO_NAME,
@@ -56,7 +74,7 @@ ${prompt}
     });
     const mainSha = mainRef.object.sha;
 
-    // 4. 创建新分支
+    // 4. 创建分支
     const branchName = `contribution/${slug}`;
     await octokit.rest.git.createRef({
       owner: REPO_OWNER,
@@ -75,7 +93,7 @@ ${prompt}
       branch: branchName,
     });
 
-    // 6. 提交媒体文件 (图片/视频)
+    // 6. 提交媒体文件
     await octokit.rest.repositories.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
@@ -85,20 +103,20 @@ ${prompt}
       branch: branchName,
     });
 
-    // 7. 发起 Pull Request
+    // 7. 发起 PR
     const { data: pr } = await octokit.rest.pulls.create({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      title: `新投稿: ${title}`,
+      title: `🎨 社区投稿: ${title}`,
       head: branchName,
       base: 'main',
-      body: `来自网页端的提示词投稿。\n\n**标题**: ${title}\n**描述**: ${description}\n**贡献者**: 匿名用户`,
+      body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **作品**: ${title}\n- **描述**: ${description}\n- **模型**: ${model}\n\n请在本地预览后点击 Merge。`,
     });
 
     return NextResponse.json({ success: true, prUrl: pr.html_url });
 
   } catch (error: any) {
-    console.error('GitHub PR Error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to create PR' }, { status: 500 });
+    console.error('Robot Contribution Error:', error);
+    return NextResponse.json({ error: error.message || 'Robot processing failed' }, { status: 500 });
   }
 }
