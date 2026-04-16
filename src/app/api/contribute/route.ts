@@ -84,7 +84,7 @@ ${prompt}
     });
 
     // 5. 提交 index.md
-    await octokit.rest.repositories.createOrUpdateFileContents({
+    await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: `public/data/${slug}/index.md`,
@@ -94,7 +94,7 @@ ${prompt}
     });
 
     // 6. 提交媒体文件
-    await octokit.rest.repositories.createOrUpdateFileContents({
+    await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: `public/data/${slug}/${fileName}`,
