@@ -90,7 +90,7 @@ ${prompt}
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `data/${targetDir}/${slug}/index.md`,
+      path: `public/data/${targetDir}/${slug}/index.md`,
       message: `Add prompt: ${title}`,
       content: Buffer.from(indexMd).toString('base64'),
       branch: branchName,
@@ -100,7 +100,7 @@ ${prompt}
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `data/${targetDir}/${slug}/${fileName}`,
+      path: `public/data/${targetDir}/${slug}/${fileName}`,
       message: `Add media for: ${title}`,
       content: fileBase64,
       branch: branchName,
