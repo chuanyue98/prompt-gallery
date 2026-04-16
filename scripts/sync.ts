@@ -2,15 +2,15 @@ import fs from 'fs-extra';
 import path from 'path';
 import matter from 'gray-matter';
 
+const ROOT_DATA_DIR = path.join(process.cwd(), 'public', 'data'); // 注意：现在我们决定只用 public/data
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const DATA_DIR = path.join(PUBLIC_DIR, 'data');
 const OUTPUT_JSON = path.join(PUBLIC_DIR, 'gallery-data.json');
 
 async function sync() {
-  console.log('🚀 Starting simple sync (public/data only)...');
+  console.log('🚀 Starting robust sync (public/data)...');
   
-  if (!(await fs.exists(DATA_DIR))) {
-    console.error(`❌ Data directory not found at ${DATA_DIR}`);
+  if (!(await fs.exists(ROOT_DATA_DIR))) {
+    console.error(`❌ Data directory not found at ${ROOT_DATA_DIR}`);
     return;
   }
 
@@ -18,7 +18,7 @@ async function sync() {
   const galleryData = [];
 
   for (const cat of categories) {
-    const catPath = path.join(DATA_DIR, cat);
+    const catPath = path.join(ROOT_DATA_DIR, cat);
     if (!(await fs.exists(catPath))) continue;
 
     const items = await fs.readdir(catPath);
@@ -32,29 +32,41 @@ async function sync() {
       const fileContent = await fs.readFile(indexPath, 'utf-8');
       const { data, content } = matter(fileContent);
 
-      // 寻找产物文件
       const files = await fs.readdir(itemPath);
-      const mediaFiles = files.filter(f => f.endsWith('.mp4') || f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.webp'));
-      const mainMedia = mediaFiles[0] || '';
+      
+      // 智能识别媒体
+      const videoFile = files.find(f => f.endsWith('.mp4'));
+      const imageFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.webp'));
+      
+      let mainMedia = "";
+      let type: 'video' | 'image' = cat === 'videos' ? 'video' : 'image';
+      
+      if (type === 'video') {
+        mainMedia = videoFile || imageFiles[0] || "";
+      } else {
+        mainMedia = imageFiles[0] || videoFile || "";
+      }
+
+      // 自动寻找封面 (如果是视频，优先找 cover.png，找不到用视频自己)
+      const coverFile = imageFiles.find(f => f.includes('cover') || f.includes('preview')) || imageFiles[0] || videoFile || "";
 
       galleryData.push({
         slug,
         ...data,
         content,
-        type: cat === 'videos' ? 'video' : 'image',
-        // 关键：现在路径直接指向 public 内部
+        type,
         mediaPath: `/data/${cat}/${slug}/`,
         media: [{
-          type: cat === 'videos' ? 'video' : 'image',
+          type,
           src: mainMedia,
-          cover: mainMedia
+          cover: coverFile
         }]
       });
     }
   }
 
   await fs.writeJSON(OUTPUT_JSON, galleryData, { spaces: 2 });
-  console.log(`✅ Simple sync complete! ${galleryData.length} items cataloged.`);
+  console.log(`✅ Success! ${galleryData.length} items cataloged correctly.`);
 }
 
 sync().catch(console.error);
