@@ -83,11 +83,14 @@ ${prompt}
       sha: mainSha,
     });
 
+    const isVideo = file.type.startsWith('video');
+    const targetDir = isVideo ? 'videos' : 'images';
+
     // 5. 提交 index.md
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `data/${slug}/index.md`,
+      path: `data/${targetDir}/${slug}/index.md`,
       message: `Add prompt: ${title}`,
       content: Buffer.from(indexMd).toString('base64'),
       branch: branchName,
@@ -97,7 +100,7 @@ ${prompt}
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `data/${slug}/${fileName}`,
+      path: `data/${targetDir}/${slug}/${fileName}`,
       message: `Add media for: ${title}`,
       content: fileBase64,
       branch: branchName,
