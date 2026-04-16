@@ -1,20 +1,20 @@
-import Gallery from '@/components/Gallery';
+import Gallery from '@/components/gallery/Gallery';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#030303] text-slate-200 selection:bg-blue-500/30 overflow-x-hidden relative">
-      {/* 1. 基础纹理层：网格 */}
+      {/* 1. Background Grid */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]" 
            style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
       </div>
 
-      {/* 2. 氛围层：柔和呼吸灯 */}
+      {/* 2. Atmosphere Glows */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-900/20 blur-[150px] rounded-full animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-indigo-900/10 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '12s' }} />
       </div>
 
-      {/* 3. 质感层：微粒噪点 (使用 SVG 滤镜) */}
+      {/* 3. Texture Noise */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03] contrast-150 brightness-150">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           <filter id="noiseFilter">
@@ -41,7 +41,7 @@ export default function Home() {
           </span>
         </h1>
         
-        <p className="text-slate-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed px-6 tracking-tight">
+        <p className="text-slate-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed px-6 tracking-tight text-center">
           一个专注于 AIGC 提示词美学与工程的灵感库。<br/>
           <span className="text-slate-400">在这里，每一行文字都能幻化为惊艳的镜头。</span>
         </p>
@@ -52,15 +52,9 @@ export default function Home() {
       </div>
 
       <footer className="relative z-10 py-32 text-center mt-20 overflow-hidden">
-        {/* 页脚背景装饰 */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        
-        <p className="text-slate-600 text-xs font-black uppercase tracking-[0.4em] mb-4">
-          Unleash the Power of AI
-        </p>
-        <p className="text-slate-500 text-[10px] font-medium opacity-50">
-          &copy; 2026 Prompt Gallery Project. All Rights Reserved.
-        </p>
+        <p className="text-slate-600 text-xs font-black uppercase tracking-[0.4em] mb-4 text-center">Unleash the Power of AI</p>
+        <p className="text-slate-500 text-[10px] font-medium opacity-50 text-center">&copy; 2026 Prompt Gallery Project. All Rights Reserved.</p>
       </footer>
     </main>
   );
