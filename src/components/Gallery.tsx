@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ContributeModal from './ContributeModal';
 
 interface GalleryItem {
   slug: string;
@@ -14,8 +15,6 @@ interface GalleryItem {
   seed?: string | number;
 }
 
-import ContributeModal from './ContributeModal';
-
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [search, setSearch] = useState('');
@@ -24,14 +23,45 @@ export default function Gallery() {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [isContributeOpen, setIsContributeOpen] = useState(false);
 
-  // ... (previous logic)
+  useEffect(() => {
+    fetch('/gallery-data.json')
+      .then(res => res.json())
+      .then(data => setItems(data))
+      .catch(err => console.error("Failed to load gallery data:", err));
+  }, []);
+
+  const copyToClipboard = (text: string, slug: string) => {
+    const cleanText = text.replace(/###.*?\n/g, '').trim();
+    navigator.clipboard.writeText(cleanText).then(() => {
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 2000);
+    });
+  };
+
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase())) ||
+      item.description.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesCategory = category === 'all' || item.media[0].type === category;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="container mx-auto px-6">
       {/* 搜索与导航控制面板 */}
       <div className="max-w-4xl mx-auto mb-16 space-y-6">
         <div className="relative group">
-          {/* ... */}
+          <input 
+            type="text" 
+            placeholder="搜索灵感..." 
+            className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.08] transition-all text-lg backdrop-blur-md"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors text-xl">
+            🔍
+          </span>
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-4 w-fit mx-auto">
@@ -66,11 +96,9 @@ export default function Gallery() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredItems.map(item => (
           <div key={item.slug} className="group relative">
-            {/* 卡片背景阴影效果 */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
             
             <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2">
-              {/* 媒体预览区 */}
               <div 
                 className="relative aspect-[4/3] cursor-pointer overflow-hidden"
                 onClick={() => setSelectedItem(item)}
@@ -84,10 +112,9 @@ export default function Gallery() {
                   <video 
                     src={`${item.mediaPath}${item.media[0].src}`}
                     className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    muted loop onMouseEnter={(e) => e.currentTarget.play()} onMouseLeave={(e) => e.currentTarget.pause()}
+                    muted loop onMouseEnter={(e) => (e.currentTarget as any).play()} onMouseLeave={(e) => (e.currentTarget as any).pause()}
                   />
                 )}
-                {/* 视频标识 */}
                 {item.media[0].type === 'video' && (
                   <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter border border-white/10">
                     Motion
@@ -95,10 +122,9 @@ export default function Gallery() {
                 )}
               </div>
 
-              {/* 内容区 */}
               <div className="p-8 flex flex-col flex-grow">
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors leading-tight">
+                  <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors leading-tight cursor-pointer" onClick={() => setSelectedItem(item)}>
                     {item.title}
                   </h3>
                   <button 
@@ -140,7 +166,6 @@ export default function Gallery() {
             className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" 
             onClick={e => e.stopPropagation()}
           >
-            {/* 左侧：大屏媒体 */}
             <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
               {selectedItem.media[0].type === 'video' ? (
                 <video src={`${selectedItem.mediaPath}${selectedItem.media[0].src}`} className="w-full h-full object-contain" controls autoPlay loop />
@@ -149,7 +174,6 @@ export default function Gallery() {
               )}
             </div>
             
-            {/* 右侧：精美详情 */}
             <div className="w-full md:w-2/5 p-12 overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-center mb-10">
                 <div className="space-y-1">
