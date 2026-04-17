@@ -45,3 +45,6 @@ next-env.d.ts
 # Generated mirrored data
 # public/data/
 gallery-data.json
+
+# local agent workspace
+.codex/

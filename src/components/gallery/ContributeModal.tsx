@@ -13,12 +13,14 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   const [preview, setPreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', sourceUrl: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState<'upload' | 'sourceUrl'>('upload');
 
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      setSubmissionMode('upload');
       setFormData((current) => ({ ...current, sourceUrl: '' }));
       setFile(selectedFile);
       const url = URL.createObjectURL(selectedFile);
@@ -54,6 +56,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         setFile(null);
         setPreview(null);
         setFormData({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', sourceUrl: '' });
+        setSubmissionMode('upload');
       } else {
         throw new Error(result.error);
       }
@@ -107,6 +110,30 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
             <button type="button" onClick={onClose} className="text-slate-500 hover:text-white transition-colors">✕</button>
           </div>
 
+          <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSubmissionMode('upload');
+                setFormData((current) => ({ ...current, sourceUrl: '' }));
+              }}
+              className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all ${submissionMode === 'upload' ? 'bg-white text-black' : 'text-slate-400 hover:text-white'}`}
+            >
+              上传文件
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSubmissionMode('sourceUrl');
+                setFile(null);
+                setPreview(null);
+              }}
+              className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all ${submissionMode === 'sourceUrl' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Source URL
+            </button>
+          </div>
+
           <div className="space-y-4">
             <div>
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">作品标题</label>
@@ -129,24 +156,25 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               <textarea required rows={4} value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none font-mono text-sm" placeholder="输入生成这个画面的完整咒语..." />
             </div>
 
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Source URL 或上传文件</label>
-              <input
-                value={formData.sourceUrl}
-                onChange={e => {
-                  const nextSourceUrl = e.target.value;
-                  setFormData({ ...formData, sourceUrl: nextSourceUrl });
+            {submissionMode === 'sourceUrl' && (
+              <div>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Source URL</label>
+                <input
+                  value={formData.sourceUrl}
+                  onChange={e => setFormData({ ...formData, sourceUrl: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  placeholder="https://example.com/your-image.png"
+                />
+                <p className="mt-2 text-xs text-slate-500">请填写直链，必须直接指向图片或视频文件。</p>
+              </div>
+            )}
 
-                  if (nextSourceUrl.trim()) {
-                    setFile(null);
-                    setPreview(null);
-                  }
-                }}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                placeholder="https://example.com/your-image.png"
-              />
-              <p className="mt-2 text-xs text-slate-500">上传图片/视频 与 sourceUrl 必须二选一。sourceUrl 需直接指向图片或视频文件。</p>
-            </div>
+            {submissionMode === 'upload' && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">上传方式</p>
+                <p className="mt-2 text-sm text-slate-400">请在左侧区域点击选择文件或拖拽上传，支持图片和视频。</p>
+              </div>
+            )}
           </div>
 
           <button disabled={isSubmitting || !canSubmit} type="submit" className={`w-full py-4 rounded-2xl font-black text-white tracking-widest transition-all ${isSubmitting || !canSubmit ? 'bg-slate-800 text-slate-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg'}`}>

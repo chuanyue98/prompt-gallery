@@ -2,7 +2,7 @@
 
 > 一个极致美学驱动的 AIGC 提示词画廊，专注于收集、展示和分享最优质的 AI 视觉艺术提示词。
 
-[🚀 立即访问画廊网页](https://chuanyue98.github.io/prompt-gallery/)
+[🚀 立即访问画廊网页](https://prompt-gallery-sigma.vercel.app/)
 
 ---
 
@@ -25,7 +25,7 @@
 我们非常欢迎来自社区的投稿！你可以通过以下两种方式参与：
 
 1. **网页端一键投稿 (推荐)**：
-   访问 [Prompt Gallery 官网](https://chuanyue98.github.io/prompt-gallery/)，点击页面上的 **“我要投稿”** 按钮，上传你的作品。系统会自动为你发起 Pull Request。
+   访问 [Prompt Gallery 官网](https://prompt-gallery-sigma.vercel.app/)，点击页面上的 **“我要投稿”** 按钮，上传你的作品。系统会自动为你发起 Pull Request。
 
 2. **本地投稿**：
    - Fork 本仓库。
