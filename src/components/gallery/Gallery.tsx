@@ -5,6 +5,14 @@ import React, { useState, useEffect } from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
 
+function isExternalUrl(value: string) {
+  return /^https?:\/\//.test(value);
+}
+
+function isVideoAsset(value: string) {
+  return /\.(mp4|webm|mov)(\?.*)?$/i.test(value);
+}
+
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +79,16 @@ export default function Gallery() {
     return matchesSearch && matchesCategory;
   });
 
+  const getMediaUrl = (item: GalleryItem, field: 'src' | 'cover') => {
+    const asset = item.media[0][field];
+
+    if (isExternalUrl(asset)) {
+      return asset;
+    }
+
+    return `${item.mediaPath}${asset}`;
+  };
+
   return (
     <div className="container mx-auto px-6">
       <div className="max-w-4xl mx-auto mb-16 space-y-6">
@@ -94,10 +112,17 @@ export default function Gallery() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
             <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-2xl">
               <div className="relative aspect-[4/3] cursor-pointer overflow-hidden" onClick={() => setSelectedItem(item)}>
-                <Image src={`${item.mediaPath}${item.media[0].cover}`} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
+                {item.media[0].type === 'video' && isVideoAsset(getMediaUrl(item, 'cover')) ? (
+                  <video src={getMediaUrl(item, 'cover')} className="w-full h-full object-cover" muted playsInline />
+                ) : isExternalUrl(getMediaUrl(item, 'cover')) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={getMediaUrl(item, 'cover')} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                ) : (
+                  <Image src={getMediaUrl(item, 'cover')} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
+                )}
                 {item.media[0].type === 'video' && (
                   <video
-                    src={`${item.mediaPath}${item.media[0].src}`}
+                    src={getMediaUrl(item, 'src')}
                     className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     muted
                     loop
@@ -148,9 +173,12 @@ export default function Gallery() {
           <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
             <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
               {selectedItem.media[0].type === 'video' ? (
-                <video src={`${selectedItem.mediaPath}${selectedItem.media[0].src}`} className="w-full h-full object-contain" controls autoPlay loop />
+                <video src={getMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
+              ) : isExternalUrl(getMediaUrl(selectedItem, 'cover')) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={getMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.title} />
               ) : (
-                <Image src={`${selectedItem.mediaPath}${selectedItem.media[0].cover}`} className="object-contain" alt={selectedItem.title} fill unoptimized />
+                <Image src={getMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.title} fill unoptimized />
               )}
             </div>
             <div className="w-full md:w-2/5 p-12 overflow-y-auto">
@@ -172,6 +200,18 @@ export default function Gallery() {
                   <div className="relative bg-black border border-white/10 rounded-2xl p-6 text-slate-300 text-sm font-mono whitespace-pre-wrap leading-loose ring-1 ring-white/5">{selectedItem.content.replace(/###.*?\n/g, '').trim()}</div>
                 </div>
               </div>
+              {selectedItem.sourceUrl && (
+                <div className="mb-10">
+                  <a
+                    href={selectedItem.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/10 px-5 py-3 text-sm font-bold text-blue-300 transition-all hover:border-blue-400 hover:bg-blue-500/20 hover:text-white"
+                  >
+                    查看来源
+                  </a>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-8 py-8 border-t border-white/5">
                 <div><label className="text-[9px] text-slate-600 uppercase block tracking-widest mb-1">Engine</label><p className="text-white font-bold">{selectedItem.model || 'N/A'}</p></div>
                 <div><label className="text-[9px] text-slate-600 uppercase block tracking-widest mb-1">Seed</label><p className="text-white font-mono">{selectedItem.seed || 'Auto'}</p></div>

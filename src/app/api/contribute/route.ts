@@ -17,6 +17,20 @@ const INSTALLATION_ID = process.env.INSTALLATION_ID;
 const REPO_OWNER = process.env.REPO_OWNER || 'chuanyue98';
 const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 
+function inferMediaTypeFromSourceUrl(sourceUrl: string) {
+  const normalizedUrl = sourceUrl.split('?')[0].toLowerCase();
+
+  if (normalizedUrl.endsWith('.mp4') || normalizedUrl.endsWith('.webm') || normalizedUrl.endsWith('.mov')) {
+    return 'video' as const;
+  }
+
+  if (normalizedUrl.endsWith('.png') || normalizedUrl.endsWith('.jpg') || normalizedUrl.endsWith('.jpeg') || normalizedUrl.endsWith('.webp') || normalizedUrl.endsWith('.gif')) {
+    return 'image' as const;
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!APP_ID || !PRIVATE_KEY || !INSTALLATION_ID) {
@@ -29,27 +43,41 @@ export async function POST(req: NextRequest) {
     const prompt = formData.get('prompt') as string;
     const tags = formData.get('tags') as string;
     const model = formData.get('model') as string;
-    const file = formData.get('file') as File;
+    const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
+    const uploadedFile = formData.get('file');
+    const file = uploadedFile instanceof File && uploadedFile.size > 0 ? uploadedFile : null;
 
-    if (!file || !title) {
+    if (!title) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if ((!file && !sourceUrl) || (file && sourceUrl)) {
+      return NextResponse.json({ error: 'Provide either a media file or a source URL' }, { status: 400 });
     }
 
     // 1. 准备文件数据
     const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30) + '-' + Math.random().toString(36).substring(7);
-    const fileName = file.name;
-    const fileBuffer = await file.arrayBuffer();
-    const fileBase64 = Buffer.from(fileBuffer).toString('base64');
+    const mediaType = file
+      ? (file.type.startsWith('video') ? 'video' : 'image')
+      : inferMediaTypeFromSourceUrl(sourceUrl);
+
+    if (!mediaType) {
+      return NextResponse.json({ error: 'Source URL must point directly to an image or video file' }, { status: 400 });
+    }
+
+    const fileName = file?.name || sourceUrl;
+    const fileBuffer = file ? await file.arrayBuffer() : null;
+    const fileBase64 = fileBuffer ? Buffer.from(fileBuffer).toString('base64') : null;
 
     const indexMd = `---
 title: "${title}"
 description: "${description}"
 tags: [${tags.split(',').map(t => `"${t.trim()}"`).join(', ')}]
 model: "${model}"
-media:
-  - type: "${file.type.startsWith('video') ? 'video' : 'image'}"
-    src: "${fileName}"
-    cover: "${fileName}"
+${sourceUrl ? `sourceUrl: "${sourceUrl}"\n` : ''}media:
+  - type: "${mediaType}"
+    src: "${file ? fileName : sourceUrl}"
+    cover: "${file ? fileName : sourceUrl}"
 ---
 
 ### 提示词 (Prompt)
@@ -83,8 +111,7 @@ ${prompt}
       sha: mainSha,
     });
 
-    const isVideo = file.type.startsWith('video');
-    const targetDir = isVideo ? 'videos' : 'images';
+    const targetDir = mediaType === 'video' ? 'videos' : 'images';
 
     // 5. 提交 index.md
     await octokit.rest.repos.createOrUpdateFileContents({
@@ -96,15 +123,17 @@ ${prompt}
       branch: branchName,
     });
 
-    // 6. 提交媒体文件
-    await octokit.rest.repos.createOrUpdateFileContents({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
-      path: `public/data/${targetDir}/${slug}/${fileName}`,
-      message: `Add media for: ${title}`,
-      content: fileBase64,
-      branch: branchName,
-    });
+    if (file && fileBase64) {
+      // 6. 提交媒体文件
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+        path: `public/data/${targetDir}/${slug}/${fileName}`,
+        message: `Add media for: ${title}`,
+        content: fileBase64,
+        branch: branchName,
+      });
+    }
 
     // 7. 发起 PR
     const { data: pr } = await octokit.rest.pulls.create({
@@ -113,7 +142,7 @@ ${prompt}
       title: `🎨 社区投稿: ${title}`,
       head: branchName,
       base: 'main',
-      body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **作品**: ${title}\n- **描述**: ${description}\n- **模型**: ${model}\n\n请在本地预览后点击 Merge。`,
+      body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **作品**: ${title}\n- **描述**: ${description}\n- **模型**: ${model}\n- **来源**: ${sourceUrl || '本地上传'}\n\n请在本地预览后点击 Merge。`,
     });
 
     return NextResponse.json({ success: true, prUrl: pr.html_url });

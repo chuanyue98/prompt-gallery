@@ -6,6 +6,10 @@ const ROOT_DATA_DIR = path.join(process.cwd(), 'public', 'data'); // 注意：�
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const OUTPUT_JSON = path.join(PUBLIC_DIR, 'gallery-data.json');
 
+function isExternalUrl(value: string) {
+  return /^https?:\/\//.test(value);
+}
+
 async function sync() {
   console.log('🚀 Starting robust sync (public/data)...');
   
@@ -34,6 +38,8 @@ async function sync() {
 
       const files = await fs.readdir(itemPath);
       
+      const frontmatterMedia = Array.isArray(data.media) ? data.media[0] : null;
+
       // 智能识别媒体
       const videoFile = files.find(f => f.endsWith('.mp4'));
       const imageFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.webp'));
@@ -48,16 +54,28 @@ async function sync() {
       }
 
       // 自动寻找封面 (如果是视频，优先找 cover.png，找不到用视频自己)
-      const coverFile = imageFiles.find(f => f.includes('cover') || f.includes('preview')) || imageFiles[0] || videoFile || "";
+      let coverFile = imageFiles.find(f => f.includes('cover') || f.includes('preview')) || imageFiles[0] || videoFile || "";
+
+      if (!mainMedia && frontmatterMedia?.src) {
+        mainMedia = frontmatterMedia.src;
+      }
+
+      if (!coverFile && frontmatterMedia?.cover) {
+        coverFile = frontmatterMedia.cover;
+      }
+
+      const mediaPath = frontmatterMedia?.src && isExternalUrl(frontmatterMedia.src)
+        ? ''
+        : `/data/${cat}/${slug}/`;
 
       galleryData.push({
         slug,
         ...data,
         content,
         type,
-        mediaPath: `/data/${cat}/${slug}/`,
+        mediaPath,
         media: [{
-          type,
+          type: frontmatterMedia?.type || type,
           src: mainMedia,
           cover: coverFile
         }]
