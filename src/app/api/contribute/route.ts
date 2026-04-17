@@ -118,8 +118,9 @@ ${prompt}
 
     return NextResponse.json({ success: true, prUrl: pr.html_url });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Robot Contribution Error:', error);
-    return NextResponse.json({ error: error.message || 'Robot processing failed' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Robot processing failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 
 interface ContributeModalProps {
@@ -46,8 +47,9 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       } else {
         throw new Error(result.error);
       }
-    } catch (error: any) {
-      alert('❌ 提交失败：' + error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '未知错误';
+      alert('❌ 提交失败：' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +62,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         <div className="w-full md:w-1/2 bg-black/50 border-r border-white/5 p-8 flex flex-col items-center justify-center min-h-[400px]">
           {preview ? (
             <div className="relative w-full h-full rounded-2xl overflow-hidden group">
-              {file?.type.startsWith('video') ? <video src={preview} className="w-full h-full object-contain" controls /> : <img src={preview} className="w-full h-full object-contain" alt="Preview" />}
+              {file?.type.startsWith('video') ? (
+                <video src={preview} className="w-full h-full object-contain" controls />
+              ) : (
+                <Image src={preview} className="w-full h-full object-contain" alt="Preview" fill unoptimized />
+              )}
               <button onClick={() => { setFile(null); setPreview(null); }} className="absolute top-4 right-4 bg-red-500/80 p-2 rounded-full hover:bg-red-600 transition-colors text-white">✕</button>
             </div>
           ) : (

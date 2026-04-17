@@ -1,21 +1,59 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
 
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<'all' | 'video' | 'image'>('all');
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/gallery-data.json')
-      .then(res => res.json())
-      .then(data => setItems(data))
-      .catch(err => console.error("Failed to load gallery data:", err));
+    let isMounted = true;
+
+    async function loadGalleryData() {
+      try {
+        const response = await fetch('/gallery-data.json');
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = (await response.json()) as GalleryItem[];
+
+        if (!isMounted) {
+          return;
+        }
+
+        setItems(data);
+        setLoadError(null);
+      } catch (error) {
+        console.error("Failed to load gallery data:", error);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setItems([]);
+        setLoadError('内容数据加载失败，请稍后刷新重试。');
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadGalleryData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCopy = async (text: string, slug: string) => {
@@ -56,9 +94,20 @@ export default function Gallery() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
             <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-2xl">
               <div className="relative aspect-[4/3] cursor-pointer overflow-hidden" onClick={() => setSelectedItem(item)}>
-                <img src={`${item.mediaPath}${item.media[0].cover}`} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <Image src={`${item.mediaPath}${item.media[0].cover}`} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
                 {item.media[0].type === 'video' && (
-                  <video src={`${item.mediaPath}${item.media[0].src}`} className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500" muted loop onMouseEnter={(e) => (e.currentTarget as any).play()} onMouseLeave={(e) => (e.currentTarget as any).pause()} />
+                  <video
+                    src={`${item.mediaPath}${item.media[0].src}`}
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    muted
+                    loop
+                    onMouseEnter={(e) => {
+                      void e.currentTarget.play();
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.pause();
+                    }}
+                  />
                 )}
                 {item.media[0].type === 'video' && <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter border border-white/10">Motion</div>}
               </div>
@@ -79,11 +128,30 @@ export default function Gallery() {
         ))}
       </div>
 
+      {!isLoading && loadError && (
+        <div className="mt-10 rounded-[2rem] border border-red-500/20 bg-red-500/10 px-6 py-5 text-center text-sm text-red-200">
+          {loadError}
+        </div>
+      )}
+
+      {!isLoading && !loadError && filteredItems.length === 0 && (
+        <div className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 px-6 py-10 text-center">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">No Results</p>
+          <p className="mt-3 text-sm text-slate-400">
+            {items.length === 0 ? '当前还没有可展示的内容。' : '没有匹配当前筛选条件的内容。'}
+          </p>
+        </div>
+      )}
+
       {selectedItem && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedItem(null)}>
           <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
             <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
-              {selectedItem.media[0].type === 'video' ? <video src={`${selectedItem.mediaPath}${selectedItem.media[0].src}`} className="w-full h-full object-contain" controls autoPlay loop /> : <img src={`${selectedItem.mediaPath}${selectedItem.media[0].cover}`} className="w-full h-full object-contain" alt={selectedItem.title} />}
+              {selectedItem.media[0].type === 'video' ? (
+                <video src={`${selectedItem.mediaPath}${selectedItem.media[0].src}`} className="w-full h-full object-contain" controls autoPlay loop />
+              ) : (
+                <Image src={`${selectedItem.mediaPath}${selectedItem.media[0].cover}`} className="object-contain" alt={selectedItem.title} fill unoptimized />
+              )}
             </div>
             <div className="w-full md:w-2/5 p-12 overflow-y-auto">
               <div className="flex justify-between items-center mb-10">

@@ -39,7 +39,7 @@ async function sync() {
       const imageFiles = files.filter(f => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.webp'));
       
       let mainMedia = "";
-      let type: 'video' | 'image' = cat === 'videos' ? 'video' : 'image';
+      const type: 'video' | 'image' = cat === 'videos' ? 'video' : 'image';
       
       if (type === 'video') {
         mainMedia = videoFile || imageFiles[0] || "";

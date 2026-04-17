@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run sync",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "sync": "tsx scripts/sync.ts"
   },
   "dependencies": {
