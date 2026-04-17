@@ -11,9 +11,9 @@ interface ContributeModalProps {
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', sourceUrl: '' });
+  const [formData, setFormData] = useState({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionMode, setSubmissionMode] = useState<'upload' | 'sourceUrl'>('upload');
+  const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
 
   if (!isOpen) return null;
 
@@ -21,7 +21,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setSubmissionMode('upload');
-      setFormData((current) => ({ ...current, sourceUrl: '' }));
+      setFormData((current) => ({ ...current, mediaUrl: '' }));
       setFile(selectedFile);
       const url = URL.createObjectURL(selectedFile);
       setPreview(url);
@@ -31,10 +31,10 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasFile = Boolean(file);
-    const hasSourceUrl = formData.sourceUrl.trim().length > 0;
+    const hasMediaUrl = formData.mediaUrl.trim().length > 0;
 
-    if ((hasFile && hasSourceUrl) || (!hasFile && !hasSourceUrl)) {
-      alert('请在上传图片/视频与填写 sourceUrl 之间二选一。');
+    if ((hasFile && hasMediaUrl) || (!hasFile && !hasMediaUrl)) {
+      alert('请在上传图片/视频与填写 mediaUrl 之间二选一。');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         onClose();
         setFile(null);
         setPreview(null);
-        setFormData({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', sourceUrl: '' });
+        setFormData({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
         setSubmissionMode('upload');
       } else {
         throw new Error(result.error);
@@ -68,8 +68,8 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     }
   };
 
-  const hasSourceUrl = formData.sourceUrl.trim().length > 0;
-  const canSubmit = (Boolean(file) || hasSourceUrl) && !(Boolean(file) && hasSourceUrl);
+  const hasMediaUrl = formData.mediaUrl.trim().length > 0;
+  const canSubmit = (Boolean(file) || hasMediaUrl) && !(Boolean(file) && hasMediaUrl);
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
@@ -85,11 +85,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               )}
               <button onClick={() => { setFile(null); setPreview(null); }} className="absolute top-4 right-4 bg-red-500/80 p-2 rounded-full hover:bg-red-600 transition-colors text-white">✕</button>
             </div>
-          ) : hasSourceUrl ? (
+          ) : hasMediaUrl ? (
             <div className="w-full h-full flex flex-col items-center justify-center border border-blue-500/20 bg-blue-500/5 rounded-[2rem] px-8 text-center">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Source URL</p>
-              <p className="mt-4 break-all text-sm text-slate-300">{formData.sourceUrl}</p>
-              <button type="button" onClick={() => setFormData((current) => ({ ...current, sourceUrl: '' }))} className="mt-6 rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-300 transition-colors hover:border-white/30 hover:text-white">
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Media URL</p>
+              <p className="mt-4 break-all text-sm text-slate-300">{formData.mediaUrl}</p>
+              <button type="button" onClick={() => setFormData((current) => ({ ...current, mediaUrl: '' }))} className="mt-6 rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-slate-300 transition-colors hover:border-white/30 hover:text-white">
                 清空链接
               </button>
             </div>
@@ -97,8 +97,8 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
             <label className="w-full h-full flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[2rem] hover:border-blue-500/50 hover:bg-blue-500/5 cursor-pointer transition-all group">
               <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">📤</div>
               <p className="text-white font-bold mb-2">点击或拖拽上传</p>
-              <p className="text-slate-500 text-xs">支持 MP4, PNG, JPG，或改填 sourceUrl</p>
-              <input type="file" className="hidden" onChange={handleFileChange} accept="video/*,image/*" disabled={hasSourceUrl} />
+              <p className="text-slate-500 text-xs">支持 MP4, PNG, JPG，或改填 mediaUrl</p>
+              <input type="file" className="hidden" onChange={handleFileChange} accept="video/*,image/*" disabled={hasMediaUrl} />
             </label>
           )}
         </div>
@@ -115,7 +115,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               type="button"
               onClick={() => {
                 setSubmissionMode('upload');
-                setFormData((current) => ({ ...current, sourceUrl: '' }));
+                setFormData((current) => ({ ...current, mediaUrl: '' }));
               }}
               className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all ${submissionMode === 'upload' ? 'bg-white text-black' : 'text-slate-400 hover:text-white'}`}
             >
@@ -124,13 +124,13 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
             <button
               type="button"
               onClick={() => {
-                setSubmissionMode('sourceUrl');
+                setSubmissionMode('mediaUrl');
                 setFile(null);
                 setPreview(null);
               }}
-              className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all ${submissionMode === 'sourceUrl' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.2em] transition-all ${submissionMode === 'mediaUrl' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
             >
-              Source URL
+              Media URL
             </button>
           </div>
 
@@ -156,18 +156,29 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               <textarea required rows={4} value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none font-mono text-sm" placeholder="输入生成这个画面的完整咒语..." />
             </div>
 
-            {submissionMode === 'sourceUrl' && (
+            {submissionMode === 'mediaUrl' && (
               <div>
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Source URL</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Media URL</label>
                 <input
-                  value={formData.sourceUrl}
-                  onChange={e => setFormData({ ...formData, sourceUrl: e.target.value })}
+                  value={formData.mediaUrl}
+                  onChange={e => setFormData({ ...formData, mediaUrl: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   placeholder="https://example.com/your-image.png"
                 />
-                <p className="mt-2 text-xs text-slate-500">请填写直链，必须直接指向图片或视频文件。</p>
+                <p className="mt-2 text-xs text-slate-500">请填写媒体直链，必须直接指向图片或视频文件。</p>
               </div>
             )}
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Source URL (可选)</label>
+              <input
+                value={formData.sourceUrl}
+                onChange={e => setFormData({ ...formData, sourceUrl: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                placeholder="https://example.com/original-post"
+              />
+              <p className="mt-2 text-xs text-slate-500">用于详情页“查看来源”按钮，可填写原帖、作品页或参考页面链接。</p>
+            </div>
 
             {submissionMode === 'upload' && (
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">

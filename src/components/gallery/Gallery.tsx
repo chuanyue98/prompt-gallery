@@ -80,7 +80,7 @@ export default function Gallery() {
   });
 
   const getMediaUrl = (item: GalleryItem, field: 'src' | 'cover') => {
-    const asset = item.media[0][field];
+    const asset = item.mediaUrl || item.media[0][field];
 
     if (isExternalUrl(asset)) {
       return asset;

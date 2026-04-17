@@ -14,5 +14,6 @@ export interface GalleryItem {
   content: string;
   model?: string;
   seed?: string | number;
+  mediaUrl?: string;
   sourceUrl?: string;
 }

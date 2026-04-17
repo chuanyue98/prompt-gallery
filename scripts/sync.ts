@@ -56,15 +56,16 @@ async function sync() {
       // 自动寻找封面 (如果是视频，优先找 cover.png，找不到用视频自己)
       let coverFile = imageFiles.find(f => f.includes('cover') || f.includes('preview')) || imageFiles[0] || videoFile || "";
 
-      if (!mainMedia && frontmatterMedia?.src) {
-        mainMedia = frontmatterMedia.src;
+      if (!mainMedia && (data.mediaUrl || frontmatterMedia?.src)) {
+        mainMedia = data.mediaUrl || frontmatterMedia.src;
       }
 
-      if (!coverFile && frontmatterMedia?.cover) {
-        coverFile = frontmatterMedia.cover;
+      if (!coverFile && (data.mediaUrl || frontmatterMedia?.cover)) {
+        coverFile = data.mediaUrl || frontmatterMedia.cover;
       }
 
-      const mediaPath = frontmatterMedia?.src && isExternalUrl(frontmatterMedia.src)
+      const resolvedMedia = data.mediaUrl || frontmatterMedia?.src;
+      const mediaPath = resolvedMedia && isExternalUrl(resolvedMedia)
         ? ''
         : `/data/${cat}/${slug}/`;
 
