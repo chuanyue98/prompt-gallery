@@ -50,7 +50,7 @@ auto_commit:
     message: "[Spec Kit] Add tasks"
   after_implement:
     enabled: true
-    message: "docs: 优化画廊布局并移除 Seed 参数"
+    message: "feat: 增加内联删除申请功能（无弹窗、原因必填、PR 标题同步）"
   after_checklist:
     enabled: false
     message: "[Spec Kit] Add checklist"

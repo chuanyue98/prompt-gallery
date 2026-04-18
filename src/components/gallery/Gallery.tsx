@@ -21,6 +21,12 @@ export default function Gallery() {
   const [category, setCategory] = useState<'all' | 'video' | 'image'>('all');
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  
+  // 删除相关状态
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -71,6 +77,49 @@ export default function Gallery() {
     }
   };
 
+  const handleDeleteRequest = async (item: GalleryItem) => {
+    if (!deleteReason.trim()) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch('/api/contribute?action=delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          slug: item.slug,
+          type: item.media[0].type,
+          title: item.title,
+          reason: deleteReason.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '删除申请提交失败');
+      }
+
+      setDeleteSuccess(true);
+      setDeleteReason('');
+      
+      // 3秒后关闭弹窗并重置状态
+      setTimeout(() => {
+        setSelectedItem(null);
+        setDeleteSuccess(false);
+        setShowDeleteForm(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Delete Request Error:', error);
+      alert(error instanceof Error ? error.message : '提交失败，请稍后重试');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
       item.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase())) ||
@@ -106,7 +155,7 @@ export default function Gallery() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
         {filteredItems.map(item => (
           <div key={item.slug} className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
@@ -178,7 +227,7 @@ export default function Gallery() {
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedItem(null)}>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }}>
           <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
             <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
               {selectedItem.media[0].type === 'video' ? (
@@ -196,7 +245,7 @@ export default function Gallery() {
                   <h2 className="text-3xl font-black text-white leading-none">{selectedItem.title}</h2>
                   <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em]">Source Code Available</p>
                 </div>
-                <button onClick={() => setSelectedItem(null)} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white border border-white/10">✕</button>
+                <button onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white border border-white/10">✕</button>
               </div>
               <div className="mb-10"><label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 block">Perspective</label><p className="text-slate-300 text-base leading-relaxed">{selectedItem.description}</p></div>
               <div className="mb-10">
@@ -224,6 +273,54 @@ export default function Gallery() {
               <div className="grid grid-cols-1 gap-8 py-8 border-t border-white/5">
                 <div><label className="text-[9px] text-slate-600 uppercase block tracking-widest mb-1">Engine</label><p className="text-white font-bold">{selectedItem.model || 'N/A'}</p></div>
               </div>
+
+              {/* 申请下架入口：内联输入逻辑 */}
+              <div className="mt-4 pt-4 border-t border-white/5">
+                {deleteSuccess ? (
+                  <div className="flex items-center justify-center py-4 bg-green-500/10 border border-green-500/20 rounded-2xl animate-in zoom-in-95 duration-500">
+                    <div className="text-center">
+                      <span className="text-green-400 text-sm font-black uppercase tracking-widest block mb-1">✅ 申请已提交</span>
+                      <p className="text-[10px] text-green-500/70">GitHub PR 已创建，请等待管理员审核</p>
+                    </div>
+                  </div>
+                ) : !showDeleteForm ? (
+                  <div className="text-right">
+                    <button
+                      onClick={() => setShowDeleteForm(true)}
+                      className="text-[10px] text-slate-600 hover:text-red-400 transition-colors cursor-pointer uppercase tracking-widest font-black"
+                    >
+                      申请下架 (TAKE DOWN)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">申请下架原因 (TAKE DOWN REASON)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={deleteReason}
+                        onChange={(e) => setDeleteReason(e.target.value)}
+                        placeholder="例如：图片失效、侵权、内容过时..."
+                        className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-blue-500/50 transition-all"
+                      />
+                      <button
+                        disabled={isDeleting || !deleteReason.trim()}
+                        onClick={() => handleDeleteRequest(selectedItem)}
+                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-[10px] font-black rounded-xl border border-red-500/30 transition-all uppercase disabled:opacity-50"
+                      >
+                        {isDeleting ? '提交中' : '确认申请'}
+                      </button>
+                      <button
+                        onClick={() => { setShowDeleteForm(false); setDeleteReason(''); }}
+                        className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-black rounded-xl border border-white/10 transition-all uppercase"
+                      >
+                        取消
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-slate-500 italic leading-none">提交后将通过 GitHub App 自动创建删除 Pull Request。</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -231,4 +328,3 @@ export default function Gallery() {
     </div>
   );
 }
-
