@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import Gallery, { filterGalleryItems, getGalleryMediaUrl } from './Gallery';
+import Gallery, { filterGalleryItems, getGalleryMediaUrl } from '@/components/gallery/Gallery';
 import type { GalleryItem } from '@/types/gallery';
 
 vi.mock('@/lib/utils', () => ({

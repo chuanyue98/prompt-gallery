@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { copyToClipboard, slugify } from './utils';
+import { copyToClipboard, slugify } from '@/lib/utils';
 
 describe('copyToClipboard', () => {
   beforeEach(() => {

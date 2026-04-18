@@ -4,7 +4,7 @@ import {
   inferMediaTypeFromUrl,
   normalizeTagList,
   validateCreateContributionInput,
-} from './route';
+} from '@/app/api/contribute/route';
 
 describe('inferMediaTypeFromUrl', () => {
   it('detects image and video assets from direct URLs', () => {
