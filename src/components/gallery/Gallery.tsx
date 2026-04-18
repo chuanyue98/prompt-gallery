@@ -90,7 +90,7 @@ export default function Gallery() {
   };
 
   return (
-    <div className="container mx-auto px-6">
+    <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
       <div className="max-w-4xl mx-auto mb-16 space-y-6">
         <div className="relative group">
           <input type="text" placeholder="搜索灵感..." onChange={(e) => setSearch(e.target.value)} className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-blue-500/50 outline-none backdrop-blur-md transition-all" />
@@ -135,17 +135,26 @@ export default function Gallery() {
                   />
                 )}
                 {item.media[0].type === 'video' && <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter border border-white/10">Motion</div>}
+                
+                {/* 模型标签：左上角 */}
+                {item.model && (
+                  <div className="absolute top-4 left-4 px-2 py-1 bg-white/10 backdrop-blur-md rounded-lg text-[9px] font-bold text-slate-300 uppercase tracking-widest border border-white/5">
+                    {item.model}
+                  </div>
+                )}
+
+                {/* 快捷复制按钮：仅在悬停时显示 */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleCopy(item.content, item.slug); }}
+                  className={`absolute bottom-4 right-4 px-4 py-2 rounded-xl text-[10px] font-bold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 border ${copiedSlug === item.slug ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-black/50 text-white border-white/20 hover:bg-white hover:text-black'}`}
+                >
+                  {copiedSlug === item.slug ? 'SUCCESS' : 'QUICK COPY'}
+                </button>
               </div>
-              <div className="p-6 flex flex-col flex-grow">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-white group-hover:text-blue-400 leading-tight cursor-pointer" onClick={() => setSelectedItem(item)}>{item.title}</h3>
-                  <button onClick={(e) => { e.stopPropagation(); handleCopy(item.content, item.slug); }} className={`px-4 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${copiedSlug === item.slug ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-slate-400 border-white/10 hover:border-white/30'}`}>
-                    {copiedSlug === item.slug ? 'SUCCESS' : 'COPY'}
-                  </button>
-                </div>
-                <p className="text-slate-400 text-sm mb-6 line-clamp-2 leading-relaxed">{item.description}</p>
-                <div className="mt-auto pt-6 border-t border-white/5 flex flex-wrap gap-2">
-                  {item.tags.map(tag => <span key={tag} className="px-3 py-1 bg-white/5 text-slate-500 text-[10px] font-bold uppercase rounded-full border border-white/5">{tag}</span>)}
+              <div className="p-4 flex flex-col flex-grow">
+                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 leading-tight mb-3 cursor-pointer" onClick={() => setSelectedItem(item)}>{item.title}</h3>
+                <div className="mt-auto pt-4 border-t border-white/5 flex flex-wrap gap-1.5">
+                  {item.tags.map(tag => <span key={tag} className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold uppercase rounded-full border border-white/5">{tag}</span>)}
                 </div>
               </div>
             </div>
@@ -222,3 +231,4 @@ export default function Gallery() {
     </div>
   );
 }
+
