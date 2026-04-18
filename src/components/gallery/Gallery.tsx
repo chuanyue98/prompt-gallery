@@ -5,12 +5,35 @@ import React, { useState, useEffect } from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
 
-function isExternalUrl(value: string) {
+export function isExternalUrl(value: string) {
   return /^https?:\/\//.test(value);
 }
 
-function isVideoAsset(value: string) {
+export function isVideoAsset(value: string) {
   return /\.(mp4|webm|mov)(\?.*)?$/i.test(value);
+}
+
+export function filterGalleryItems(items: GalleryItem[], search: string, category: 'all' | 'video' | 'image') {
+  const normalizedSearch = search.toLowerCase();
+
+  return items.filter((item) => {
+    const matchesSearch = item.title.toLowerCase().includes(normalizedSearch)
+      || item.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
+      || item.description.toLowerCase().includes(normalizedSearch);
+    const matchesCategory = category === 'all' || item.media[0].type === category;
+
+    return matchesSearch && matchesCategory;
+  });
+}
+
+export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover') {
+  const asset = item.mediaUrl || item.media[0][field];
+
+  if (isExternalUrl(asset)) {
+    return asset;
+  }
+
+  return `${item.mediaPath}${asset}`;
 }
 
 export default function Gallery() {
@@ -120,23 +143,7 @@ export default function Gallery() {
     }
   };
 
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase())) ||
-      item.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = category === 'all' || item.media[0].type === category;
-    return matchesSearch && matchesCategory;
-  });
-
-  const getMediaUrl = (item: GalleryItem, field: 'src' | 'cover') => {
-    const asset = item.mediaUrl || item.media[0][field];
-
-    if (isExternalUrl(asset)) {
-      return asset;
-    }
-
-    return `${item.mediaPath}${asset}`;
-  };
+  const filteredItems = filterGalleryItems(items, search, category);
 
   return (
     <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
@@ -161,17 +168,17 @@ export default function Gallery() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
             <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-2xl">
               <div className="relative aspect-[4/3] cursor-pointer overflow-hidden" onClick={() => setSelectedItem(item)}>
-                {item.media[0].type === 'video' && isVideoAsset(getMediaUrl(item, 'cover')) ? (
-                  <video src={getMediaUrl(item, 'cover')} className="w-full h-full object-cover" muted playsInline />
-                ) : isExternalUrl(getMediaUrl(item, 'cover')) ? (
+                {item.media[0].type === 'video' && isVideoAsset(getGalleryMediaUrl(item, 'cover')) ? (
+                  <video src={getGalleryMediaUrl(item, 'cover')} className="w-full h-full object-cover" muted playsInline />
+                ) : isExternalUrl(getGalleryMediaUrl(item, 'cover')) ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={getMediaUrl(item, 'cover')} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <img src={getGalleryMediaUrl(item, 'cover')} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
-                  <Image src={getMediaUrl(item, 'cover')} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
+                  <Image src={getGalleryMediaUrl(item, 'cover')} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
                 )}
                 {item.media[0].type === 'video' && (
                   <video
-                    src={getMediaUrl(item, 'src')}
+                    src={getGalleryMediaUrl(item, 'src')}
                     className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     muted
                     loop
@@ -229,14 +236,14 @@ export default function Gallery() {
       {selectedItem && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }}>
           <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
-            <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
-              {selectedItem.media[0].type === 'video' ? (
-                <video src={getMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
-              ) : isExternalUrl(getMediaUrl(selectedItem, 'cover')) ? (
+              <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
+                {selectedItem.media[0].type === 'video' ? (
+                  <video src={getGalleryMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
+              ) : isExternalUrl(getGalleryMediaUrl(selectedItem, 'cover')) ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={getMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.title} />
+                <img src={getGalleryMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.title} />
               ) : (
-                <Image src={getMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.title} fill unoptimized />
+                <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.title} fill unoptimized />
               )}
             </div>
             <div className="w-full md:w-2/5 p-12 overflow-y-auto">

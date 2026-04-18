@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
+import { slugify } from '@/lib/utils';
 
 // ---------------------------------------------------------
 // 🚨 Vercel 环境变量说明：
@@ -17,7 +18,25 @@ const INSTALLATION_ID = process.env.INSTALLATION_ID;
 const REPO_OWNER = process.env.REPO_OWNER || 'chuanyue98';
 const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 
-function inferMediaTypeFromUrl(url: string) {
+type MediaType = 'video' | 'image';
+
+interface CreateContributionInput {
+  title: string;
+  description: string;
+  prompt: string;
+  tags: string;
+  model: string;
+  mediaUrl: string;
+  sourceUrl: string;
+  file: File | null;
+}
+
+interface ValidationResult {
+  error: string | null;
+  mediaType: MediaType | null;
+}
+
+export function inferMediaTypeFromUrl(url: string): MediaType | null {
   const normalizedUrl = url.split('?')[0].toLowerCase();
 
   if (normalizedUrl.endsWith('.mp4') || normalizedUrl.endsWith('.webm') || normalizedUrl.endsWith('.mov')) {
@@ -29,6 +48,70 @@ function inferMediaTypeFromUrl(url: string) {
   }
 
   return null;
+}
+
+function inferMediaTypeFromFile(file: File | null): MediaType | null {
+  if (!file) {
+    return null;
+  }
+
+  return file.type.startsWith('video') ? 'video' : 'image';
+}
+
+export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'title' | 'mediaUrl' | 'file'>): ValidationResult {
+  if (!input.title.trim()) {
+    return { error: 'Missing required fields', mediaType: null };
+  }
+
+  if ((!input.file && !input.mediaUrl) || (input.file && input.mediaUrl)) {
+    return { error: 'Provide either a media file or a media URL', mediaType: null };
+  }
+
+  const mediaType = input.file ? inferMediaTypeFromFile(input.file) : inferMediaTypeFromUrl(input.mediaUrl);
+
+  if (!mediaType) {
+    return { error: 'Media URL must point directly to an image or video file', mediaType: null };
+  }
+
+  return { error: null, mediaType };
+}
+
+export function normalizeTagList(tags: string): string[] {
+  return tags
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+export function buildContributionIndexMd(input: {
+  title: string;
+  description: string;
+  prompt: string;
+  tags: string;
+  model: string;
+  mediaUrl: string;
+  sourceUrl: string;
+  mediaType: MediaType;
+  assetReference: string;
+}): string {
+  const normalizedTags = normalizeTagList(input.tags)
+    .map((tag) => `"${tag}"`)
+    .join(', ');
+
+  return `---
+title: "${input.title}"
+description: "${input.description}"
+tags: [${normalizedTags}]
+model: "${input.model}"
+${input.mediaUrl ? `mediaUrl: "${input.mediaUrl}"\n` : ''}${input.sourceUrl ? `sourceUrl: "${input.sourceUrl}"\n` : ''}media:
+  - type: "${input.mediaType}"
+    src: "${input.assetReference}"
+    cover: "${input.assetReference}"
+---
+
+### 提示词 (Prompt)
+${input.prompt}
+`;
 }
 
 export async function POST(req: NextRequest) {
@@ -65,52 +148,42 @@ export async function POST(req: NextRequest) {
 
 async function handleCreate(req: NextRequest, octokit: Octokit) {
   const formData = await req.formData();
-  const title = formData.get('title') as string;
-  const description = formData.get('description') as string;
-  const prompt = formData.get('prompt') as string;
-  const tags = formData.get('tags') as string;
-  const model = formData.get('model') as string;
+  const title = ((formData.get('title') as string) || '').trim();
+  const description = (formData.get('description') as string) || '';
+  const prompt = (formData.get('prompt') as string) || '';
+  const tags = (formData.get('tags') as string) || '';
+  const model = (formData.get('model') as string) || '';
   const mediaUrl = ((formData.get('mediaUrl') as string) || '').trim();
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
   const uploadedFile = formData.get('file');
   const file = uploadedFile instanceof File && uploadedFile.size > 0 ? uploadedFile : null;
+  const validation = validateCreateContributionInput({ title, mediaUrl, file });
 
-  if (!title) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  if (validation.error) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
-  if ((!file && !mediaUrl) || (file && mediaUrl)) {
-    return NextResponse.json({ error: 'Provide either a media file or a media URL' }, { status: 400 });
-  }
-
-  // 1. 准备文件数据
-  const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30) + '-' + Math.random().toString(36).substring(7);
-  const mediaType = file
-    ? (file.type.startsWith('video') ? 'video' : 'image')
-    : inferMediaTypeFromUrl(mediaUrl);
-
-  if (!mediaType) {
+  if (!validation.mediaType) {
     return NextResponse.json({ error: 'Media URL must point directly to an image or video file' }, { status: 400 });
   }
 
+  // 1. 准备文件数据
+  const slug = slugify(title);
+  const mediaType = validation.mediaType;
   const fileName = file?.name || mediaUrl;
   const fileBuffer = file ? await file.arrayBuffer() : null;
   const fileBase64 = fileBuffer ? Buffer.from(fileBuffer).toString('base64') : null;
-
-  const indexMd = `---
-title: "${title}"
-description: "${description}"
-tags: [${tags.split(',').map(t => `"${t.trim()}"`).join(', ')}]
-model: "${model}"
-${mediaUrl ? `mediaUrl: "${mediaUrl}"\n` : ''}${sourceUrl ? `sourceUrl: "${sourceUrl}"\n` : ''}media:
-  - type: "${mediaType}"
-    src: "${file ? fileName : mediaUrl}"
-    cover: "${file ? fileName : mediaUrl}"
----
-
-### 提示词 (Prompt)
-${prompt}
-`;
+  const indexMd = buildContributionIndexMd({
+    title,
+    description,
+    prompt,
+    tags,
+    model,
+    mediaUrl,
+    sourceUrl,
+    mediaType,
+    assetReference: file ? fileName : mediaUrl,
+  });
 
   // 2. 获取主分支 SHA
   const { data: mainRef } = await octokit.rest.git.getRef({

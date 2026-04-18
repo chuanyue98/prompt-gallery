@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
@@ -21,16 +23,23 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "fs-extra": "^11.3.4",
     "gray-matter": "^4.0.3",
+    "jsdom": "^29.0.2",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }
