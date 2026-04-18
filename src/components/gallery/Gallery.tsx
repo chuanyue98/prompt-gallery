@@ -255,7 +255,7 @@ export default function Gallery() {
                 </div>
                 <div className="relative group/code">
                   <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl blur opacity-20" />
-                  <div className="relative bg-black border border-white/10 rounded-2xl p-6 text-slate-300 text-sm font-mono whitespace-pre-wrap leading-loose ring-1 ring-white/5">{selectedItem.content.replace(/###.*?\n/g, '').trim()}</div>
+                  <div className="relative bg-black border border-white/10 rounded-2xl p-6 text-slate-300 text-sm font-mono whitespace-pre-wrap leading-loose ring-1 ring-white/5">{selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}</div>
                 </div>
               </div>
               {selectedItem.sourceUrl && (
