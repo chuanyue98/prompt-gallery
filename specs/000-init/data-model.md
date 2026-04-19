@@ -12,7 +12,6 @@
 - `tags`: 标签数组，用于搜索与辅助浏览。
 - `content`: Markdown 正文中的提示词文本。
 - `model`: 模型名称或引擎名称。
-- `seed`: 初始版本保留的生成参数。
 - `mediaPath`: 仓库内资源的公共前缀路径；外部媒体时可为空。
 - `media`: 媒体数组，首项作为主展示资源，包含 `type`、`src`、`cover`。
 - `mediaUrl`: 可选的外部媒体直链。
@@ -23,7 +22,6 @@
 - `slug` 必须可安全用于目录名与分支名。
 - `title`、`content`、主媒体信息必须存在。
 - `media[0].type` 仅允许 `image` 或 `video`。
-- `seed` 在 `000-init` 中视为允许展示与录入的元数据。
 
 ## ContributionDraft
 
@@ -36,7 +34,6 @@
 - `prompt`
 - `tags`
 - `model`
-- `seed`
 - `file`
 - `mediaUrl`
 

@@ -15,7 +15,6 @@
 - `prompt` (required)
 - `tags` (optional, comma separated)
 - `model` (optional)
-- `seed` (optional in request, but initial UI should support it)
 - `file` (required when `mediaUrl` absent)
 - `mediaUrl` (required when `file` absent)
 

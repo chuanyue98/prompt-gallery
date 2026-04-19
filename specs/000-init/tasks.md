@@ -32,7 +32,7 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 
 **目的**: 搭建所有用户故事共享的数据结构、工具函数与内容目录约定
 
-- [ ] T004 定义 `src/types/gallery.ts` 中的 `GalleryItem`、`Media` 等基础类型，包含 `seed`
+- [ ] T004 定义 `src/types/gallery.ts` 中的 `GalleryItem`、`Media` 等基础类型
 - [ ] T005 [P] 实现 `src/lib/utils.ts` 中的复制、slug 生成与通用辅助函数
 - [ ] T006 [P] 创建 `public/data/images/`、`public/data/videos/` 示例目录及示例 `index.md`
 - [ ] T007 实现 `scripts/sync.ts`，将 `public/data/` 内容生成到 `public/gallery-data.json`
@@ -52,7 +52,7 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 - [ ] T008 [P] [US1] 实现 `src/components/layout/Navbar.tsx`，提供品牌展示与投稿入口按钮
 - [ ] T009 [P] [US1] 实现 `src/app/page.tsx` 的首页布局、Hero 与画廊容器
 - [ ] T010 [US1] 实现 `src/components/gallery/Gallery.tsx` 的数据加载、搜索、分类筛选与桌面三列卡片布局
-- [ ] T011 [US1] 在 `src/components/gallery/Gallery.tsx` 中实现详情弹窗，展示 Prompt、描述、模型与 `Seed`
+- [ ] T011 [US1] 在 `src/components/gallery/Gallery.tsx` 中实现详情弹窗，展示 Prompt、描述和模型信息
 - [ ] T012 [US1] 在 `src/components/gallery/Gallery.tsx` 与 `src/lib/utils.ts` 中实现复制反馈逻辑
 
 **检查点**: 用户故事 1 完成后，站点已具备核心浏览价值
@@ -67,11 +67,11 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 
 ### 用户故事 2 的实施
 
-- [ ] T013 [US2] 实现 `src/components/gallery/ContributeModal.tsx`，支持文件上传与标题、描述、Prompt、标签、模型、`Seed` 输入
+- [ ] T013 [US2] 实现 `src/components/gallery/ContributeModal.tsx`，支持文件上传与标题、描述、Prompt、标签和模型输入
 - [ ] T014 [US2] 在 `src/components/layout/Navbar.tsx` 中接入投稿弹窗开关与提交流程入口
 - [ ] T015 [US2] 实现 `src/app/api/contribute/route.ts` 的表单校验、媒体类型识别与 slug 生成逻辑
 - [ ] T016 [US2] 在 `src/app/api/contribute/route.ts` 中实现 GitHub App 鉴权、分支创建、`index.md` 写入与 Pull Request 创建
-- [ ] T017 [US2] 在 `src/app/api/contribute/route.ts` 中生成包含 `Seed` 字段的投稿 `index.md` 模板
+- [ ] T017 [US2] 在 `src/app/api/contribute/route.ts` 中生成投稿 `index.md` 模板
 
 **检查点**: 用户故事 2 完成后，社区用户可通过网页向仓库提交新作品
 
@@ -154,5 +154,5 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 
 ## 备注
 
-- `000-init` 以“可生成 `001` 之前的代码”为目标，因此任务中显式保留了桌面三列布局与 `Seed` 字段。
+- `000-init` 以“可生成 `001` 之前的代码”为目标，因此任务中显式保留了桌面三列布局。
 - 删除申请与自动化测试不在本规格实施范围内。
