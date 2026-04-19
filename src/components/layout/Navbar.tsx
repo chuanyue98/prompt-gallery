@@ -1,32 +1,152 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ContributeModal from '@/components/gallery/ContributeModal';
+import {
+  applyThemeToDocument,
+  DEFAULT_THEME,
+  persistTheme,
+  readStoredTheme,
+  THEME_OPTIONS,
+  type ThemeId,
+} from '@/lib/theme';
 
 export default function Navbar() {
   const [isContributeOpen, setIsContributeOpen] = useState(false);
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_THEME;
+    }
+
+    return readStoredTheme();
+  });
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (!isThemeOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!themeMenuRef.current?.contains(event.target as Node)) {
+        setIsThemeOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isThemeOpen]);
+
+  const handleThemeChange = (nextTheme: ThemeId) => {
+    setTheme(nextTheme);
+    persistTheme(nextTheme);
+    setIsThemeOpen(false);
+  };
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-black/50 backdrop-blur-xl">
-        <div className="max-w-[1440px] mx-auto px-6 h-20 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel)_92%,transparent)] backdrop-blur-xl">
+        <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6">
           {/* Logo */}
-          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center font-black text-white text-xl shadow-[0_0_15px_rgba(59,130,246,0.5)] group-hover:scale-110 transition-transform">
-              P
+          <div className="group flex cursor-pointer items-center gap-3" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="theme-panel flex h-11 w-11 items-center justify-center rounded-[1.5rem] border border-[color-mix(in_srgb,var(--border-soft)_60%,transparent)] bg-[color-mix(in_srgb,var(--surface-panel-strong)_78%,transparent)] shadow-[var(--shadow-ambient)] transition-transform group-hover:scale-[1.03]">
+              <div className="h-6 w-6 rounded-full border border-[color-mix(in_srgb,var(--accent)_18%,transparent)] bg-[radial-gradient(circle_at_30%_30%,color-mix(in_srgb,var(--accent)_26%,transparent),transparent_68%)]" />
             </div>
-            <span className="text-white font-black tracking-tighter text-xl group-hover:text-blue-400 transition-colors">
-              PROMPT <span className="text-slate-500 font-medium">GALLERY</span>
-            </span>
+            <div className="flex flex-col leading-none">
+              <span className="text-[0.93rem] font-black uppercase tracking-[0.22em] text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent)] sm:text-[0.98rem]">
+                Prompt Gallery
+              </span>
+              <span className="mt-1 text-[8px] font-medium tracking-[0.18em] text-[var(--text-muted)]">
+                灵感提示画廊
+              </span>
+            </div>
           </div>
 
-          {/* Contribute Button */}
-          <button 
-            onClick={() => setIsContributeOpen(true)}
-            className="px-6 py-2.5 rounded-xl bg-white text-black font-black text-xs tracking-widest hover:bg-blue-500 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <span>+</span> 我要投稿
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div
+              ref={themeMenuRef}
+              data-testid="theme-switcher"
+              className="relative"
+            >
+              <button
+                type="button"
+                aria-label="主题切换选项框"
+                aria-expanded={isThemeOpen}
+                aria-haspopup="listbox"
+                data-testid="theme-trigger"
+                onClick={() => setIsThemeOpen((open) => !open)}
+                className="theme-option-trigger flex min-w-[11.5rem] items-center justify-between gap-3 rounded-[1.2rem] px-4 py-2.5"
+              >
+                <div className="min-w-0 text-left">
+                  <p className="text-[8px] font-black uppercase tracking-[0.34em] text-[var(--text-muted)]">
+                    THEME
+                  </p>
+                  <p className="truncate pt-1 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--text-primary)]">
+                    {THEME_OPTIONS.find((option) => option.id === theme)?.label}
+                  </p>
+                </div>
+                <span className={`text-[10px] text-[var(--text-muted)] transition-transform ${isThemeOpen ? 'rotate-180' : ''}`}>
+                  ▾
+                </span>
+              </button>
+
+              {isThemeOpen && (
+                <div
+                  role="listbox"
+                  aria-label="主题列表"
+                  data-testid="theme-options"
+                  className="theme-option-list absolute top-[calc(100%+0.55rem)] right-0 min-w-[15rem] rounded-[1.35rem] p-2"
+                >
+                  {THEME_OPTIONS.map((option) => {
+                    const isActive = option.id === theme;
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        data-theme-option={option.id}
+                        onClick={() => handleThemeChange(option.id)}
+                        className={`theme-option-item flex w-full items-start justify-between rounded-[1rem] px-3 py-3 text-left ${
+                          isActive ? 'theme-option-item-active' : ''
+                        }`}
+                      >
+                        <span className="pr-3">
+                          <span className="block text-[11px] font-black uppercase tracking-[0.16em]">
+                            {option.label}
+                          </span>
+                          <span className="mt-1 block text-[10px] leading-relaxed text-[var(--text-muted)]">
+                            {option.description}
+                          </span>
+                        </span>
+                        {isActive ? (
+                          <span className="pt-0.5 text-[10px] font-black uppercase tracking-[0.22em]">
+                            On
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsContributeOpen(true)}
+              className="theme-primary-button flex items-center gap-2 rounded-[1.1rem] px-4 py-2.5 text-[11px] font-black tracking-[0.24em] sm:px-6"
+            >
+              <span>+</span> 我要投稿
+            </button>
+          </div>
         </div>
       </nav>
 

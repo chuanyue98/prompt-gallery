@@ -1,8 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Home from '@/app/page';
 import Gallery, { filterGalleryItems, getGalleryMediaUrl } from '@/components/gallery/Gallery';
 import ContributeModal from '@/components/gallery/ContributeModal';
+import { THEME_STORAGE_KEY, getThemeLabel } from '@/lib/theme';
 import type { GalleryItem } from '@/types/gallery';
 
 vi.mock('@/lib/utils', () => ({
@@ -49,6 +51,8 @@ describe('getGalleryMediaUrl', () => {
 
 describe('Gallery component', () => {
   beforeEach(() => {
+    window.localStorage.clear();
+    document.documentElement.dataset.theme = 'cyber-obsidian';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => galleryItems,
@@ -136,13 +140,80 @@ describe('Gallery component', () => {
 
     const modelBadge = screen.getByTestId('model-badge-video-item');
     expect(modelBadge).toHaveTextContent('sora');
-    expect(modelBadge.className).toContain('bg-cyan-400/18');
-    expect(modelBadge.className).toContain('text-cyan-100');
-    expect(modelBadge.className).toContain('border-cyan-300/40');
+    expect(modelBadge.className).toContain('theme-model-badge');
 
     const regularTag = screen.getByText('video');
-    expect(regularTag.className).toContain('bg-white/5');
-    expect(regularTag.className).toContain('text-slate-500');
+    expect(regularTag.className).toContain('theme-tag');
+  });
+
+  it('switches between themes from the navbar and persists the selection', async () => {
+    const user = userEvent.setup();
+
+    render(<Home />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe('cyber-obsidian');
+
+    await user.click(screen.getByRole('button', { name: '主题切换选项框' }));
+    await user.click(screen.getByTestId('theme-options').querySelector('[data-theme-option="soft-ui"]') as HTMLElement);
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('soft-ui');
+    });
+
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('soft-ui');
+    expect(screen.getByTestId('theme-trigger')).toHaveTextContent(getThemeLabel('soft-ui'));
+    expect(screen.getByText('THEME')).toBeInTheDocument();
+    expect(screen.getByText('灵感提示画廊')).toBeInTheDocument();
+  });
+
+  it('restores stored theme preferences and falls back to the default theme for invalid values', async () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'soft-ui');
+    render(<Home />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('soft-ui');
+    });
+
+    document.documentElement.dataset.theme = 'cyber-obsidian';
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'broken-theme');
+
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('cyber-obsidian');
+    });
+  });
+
+  it('applies soft ui surface classes to key gallery controls and overlays', async () => {
+    const user = userEvent.setup();
+
+    render(<Home />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '主题切换选项框' }));
+    await user.click(screen.getByTestId('theme-options').querySelector('[data-theme-option="soft-ui"]') as HTMLElement);
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('soft-ui');
+    });
+
+    expect(screen.getByTestId('theme-trigger').className).toContain('theme-option-trigger');
+    expect(screen.getByTestId('gallery-search').className).toContain('theme-input');
+    expect(screen.getByTestId('gallery-category-switcher').className).toContain('theme-panel');
+    expect(screen.getByTestId('gallery-card-video-item').parentElement?.className).toContain('theme-card');
+
+    await user.click(screen.getByRole('button', { name: '打开作品详情: video-item' }));
+
+    expect(screen.getByRole('button', { name: '复制详情提示词' }).className).toContain('theme-copy-button');
+    expect(screen.getByRole('button', { name: '关闭详情弹层' }).className).toContain('theme-secondary-button');
+
+    await user.click(screen.getByRole('button', { name: /我要投稿/i }));
+
+    expect(screen.getByTestId('contribute-mode-switcher').className).toContain('theme-panel');
+    expect(screen.getByDisplayValue('Seedance 2.0').className).toContain('theme-input');
   });
 });
 
@@ -150,6 +221,8 @@ describe('ContributeModal component', () => {
   it('removes the title input while keeping the submission context clear', () => {
     render(<ContributeModal isOpen onClose={() => {}} />);
 
+    expect(screen.getByTestId('contribute-modal-shell').className).not.toContain('overflow-y-auto');
+    expect(screen.getByTestId('contribute-modal-shell').className).toContain('theme-modal');
     expect(screen.queryByRole('heading', { name: '我要投稿' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '上传文件' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Media URL' })).toBeInTheDocument();

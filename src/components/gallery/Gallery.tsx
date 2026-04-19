@@ -157,13 +157,25 @@ export default function Gallery() {
     <div className="mx-auto max-w-[1800px]">
       <div className="mx-auto mb-10 max-w-3xl space-y-4">
         <div className="relative group">
-          <input type="text" placeholder="搜索灵感..." onChange={(e) => setSearch(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pr-5 pl-13 text-white outline-none transition-all backdrop-blur-md focus:ring-2 focus:ring-blue-500/50" />
-          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
+          <input
+            data-testid="gallery-search"
+            type="text"
+            placeholder="搜索灵感..."
+            onChange={(e) => setSearch(e.target.value)}
+            className="theme-input w-full rounded-[1.75rem] py-4 pr-5 pl-13 backdrop-blur-md"
+          />
+          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔍</span>
         </div>
 
-        <div className="flex justify-center p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit mx-auto backdrop-blur-md">
+        <div className="theme-panel mx-auto flex w-fit justify-center rounded-[1.5rem] p-1.5 backdrop-blur-md" data-testid="gallery-category-switcher">
           {(['all', 'video', 'image'] as const).map((cat) => (
-            <button key={cat} onClick={() => setCategory(cat)} className={`rounded-xl px-6 py-2 text-xs font-bold transition-all sm:px-8 sm:text-sm ${category === cat ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`rounded-[1rem] px-6 py-2 text-xs font-bold uppercase tracking-[0.18em] sm:px-8 sm:text-sm ${
+                category === cat ? 'theme-chip-active' : 'theme-chip'
+              }`}
+            >
               {cat === 'all' ? '全部' : cat === 'video' ? '视频' : '图片'}
             </button>
           ))}
@@ -173,9 +185,10 @@ export default function Gallery() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
         {filteredItems.map(item => (
           <div key={item.slug} className="group relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
-            <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-2xl">
+            <div className="absolute -inset-0.5 rounded-[2rem] opacity-0 blur-xl transition duration-500 group-hover:opacity-30" style={{ background: 'var(--surface-accent)' }} />
+            <div className="theme-card theme-card-hover relative flex h-full flex-col overflow-hidden rounded-[2rem] transition-all duration-500">
               <div
+                data-testid={`gallery-card-${item.slug}`}
                 className="relative aspect-[4/3] cursor-pointer overflow-hidden"
                 role="button"
                 tabIndex={0}
@@ -210,13 +223,13 @@ export default function Gallery() {
                     }}
                   />
                 )}
-                {item.media[0].type === 'video' && <div className="absolute top-3 right-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[9px] font-black text-white uppercase tracking-tighter border border-white/10">Motion</div>}
+                {item.media[0].type === 'video' && <div className="theme-panel absolute top-3 right-3 rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-tighter">Motion</div>}
                 
                 {/* 模型标签：左上角 */}
                 {item.model && (
                   <div
                     data-testid={`model-badge-${item.slug}`}
-                    className="absolute top-3 left-3 rounded-lg border border-cyan-300/40 bg-cyan-400/18 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md"
+                    className="theme-model-badge absolute top-3 left-3 rounded-lg px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md"
                   >
                     {item.model}
                   </div>
@@ -226,14 +239,16 @@ export default function Gallery() {
                 <button 
                   aria-label={`${item.slug} quick copy`}
                   onClick={(e) => { e.stopPropagation(); handleCopy(item.content, item.slug); }}
-                  className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-xl text-[9px] font-bold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 border ${copiedSlug === item.slug ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-black/50 text-white border-white/20 hover:bg-white hover:text-black'}`}
+                  className={`absolute bottom-3 right-3 translate-y-2 rounded-xl px-3 py-1.5 text-[9px] font-bold opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 ${
+                    copiedSlug === item.slug ? 'theme-success-surface' : 'theme-copy-button'
+                  }`}
                 >
                   {copiedSlug === item.slug ? 'SUCCESS' : 'QUICK COPY'}
                 </button>
               </div>
               <div className="p-4">
                 <div className="flex flex-wrap gap-1.5">
-                  {item.tags.slice(0, 4).map(tag => <span key={tag} className="px-2 py-0.5 bg-white/5 text-slate-500 text-[8px] font-bold uppercase rounded-full border border-white/5 tracking-[0.14em]">{tag}</span>)}
+                  {item.tags.slice(0, 4).map(tag => <span key={tag} className="theme-tag rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.14em]">{tag}</span>)}
                 </div>
               </div>
             </div>
@@ -242,24 +257,24 @@ export default function Gallery() {
       </div>
 
       {!isLoading && loadError && (
-        <div className="mt-10 rounded-[2rem] border border-red-500/20 bg-red-500/10 px-6 py-5 text-center text-sm text-red-200">
+        <div className="theme-danger-button mt-10 rounded-[2rem] px-6 py-5 text-center text-sm">
           {loadError}
         </div>
       )}
 
       {!isLoading && !loadError && filteredItems.length === 0 && (
-        <div className="mt-10 rounded-[2rem] border border-white/10 bg-white/5 px-6 py-10 text-center">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">No Results</p>
-          <p className="mt-3 text-sm text-slate-400">
+        <div className="theme-panel mt-10 rounded-[2rem] px-6 py-10 text-center">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">No Results</p>
+          <p className="mt-3 text-sm text-[var(--text-secondary)]">
             {items.length === 0 ? '当前还没有可展示的内容。' : '没有匹配当前筛选条件的内容。'}
           </p>
         </div>
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }}>
-          <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-6xl max-h-[85vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
-              <div className="w-full md:w-3/5 bg-black flex items-center justify-center relative border-r border-white/5">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-6 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }}>
+          <div className="theme-modal flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-[3rem] md:flex-row" onClick={e => e.stopPropagation()}>
+              <div className="relative flex w-full items-center justify-center border-r border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel-strong)_88%,black)] md:w-3/5">
                 {selectedItem.media[0].type === 'video' ? (
                   <video src={getGalleryMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
               ) : isExternalUrl(getGalleryMediaUrl(selectedItem, 'cover')) ? (
@@ -273,28 +288,28 @@ export default function Gallery() {
               <div className="flex justify-between items-start gap-4 mb-8">
                 <div className="flex flex-wrap gap-2">
                   {selectedItem.model && (
-                    <span className="rounded-full border border-cyan-300/40 bg-cyan-400/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]">
+                    <span className="theme-model-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em]">
                       {selectedItem.model}
                     </span>
                   )}
                   {selectedItem.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    <span key={tag} className="theme-tag rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em]">
                       {tag}
                     </span>
                   ))}
                 </div>
-                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white border border-white/10">✕</button>
+                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full">✕</button>
               </div>
               <div className="mb-8">
-                <p className="text-slate-300 text-base leading-relaxed">{selectedItem.description}</p>
+                <p className="text-base leading-relaxed text-[var(--text-secondary)]">{selectedItem.description}</p>
               </div>
               <div className="mb-8">
                 <div className="flex justify-end mb-3">
-                  <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${copiedSlug === 'modal' ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'text-blue-400 border-blue-500/30'}`}>{copiedSlug === 'modal' ? 'Copied' : 'Instant Copy'}</button>
+                  <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${copiedSlug === 'modal' ? 'theme-success-surface' : 'theme-copy-button'}`}>{copiedSlug === 'modal' ? 'Copied' : 'Instant Copy'}</button>
                 </div>
                 <div className="relative group/code">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl blur opacity-20" />
-                  <div className="relative bg-black border border-white/10 rounded-2xl p-6 text-slate-300 text-sm font-mono whitespace-pre-wrap leading-loose ring-1 ring-white/5">{selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}</div>
+                  <div className="absolute -inset-1 rounded-2xl opacity-20 blur" style={{ background: 'var(--surface-accent)' }} />
+                  <div className="theme-panel-strong relative rounded-2xl p-6 text-sm font-mono whitespace-pre-wrap leading-loose text-[var(--text-primary)]">{selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}</div>
                 </div>
               </div>
               {selectedItem.sourceUrl && (
@@ -303,56 +318,56 @@ export default function Gallery() {
                     href={selectedItem.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/10 px-5 py-3 text-sm font-bold text-blue-300 transition-all hover:border-blue-400 hover:bg-blue-500/20 hover:text-white"
+                    className="theme-secondary-button inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold"
                   >
                     查看来源
                   </a>
                 </div>
               )}
               {/* 申请下架入口：内联输入逻辑 */}
-              <div className="mt-4 pt-4 border-t border-white/5">
+              <div className="mt-4 border-t border-[var(--border-soft)] pt-4">
                 {deleteSuccess ? (
-                  <div className="flex items-center justify-center py-4 bg-green-500/10 border border-green-500/20 rounded-2xl animate-in zoom-in-95 duration-500">
+                  <div className="theme-success-surface flex items-center justify-center rounded-2xl py-4 animate-in zoom-in-95 duration-500">
                     <div className="text-center">
-                      <span className="text-green-400 text-sm font-black uppercase tracking-widest block mb-1">✅ 申请已提交</span>
-                      <p className="text-[10px] text-green-500/70">GitHub PR 已创建，请等待管理员审核</p>
+                      <span className="mb-1 block text-sm font-black uppercase tracking-widest">✅ 申请已提交</span>
+                      <p className="text-[10px] opacity-80">GitHub PR 已创建，请等待管理员审核</p>
                     </div>
                   </div>
                 ) : !showDeleteForm ? (
                   <div className="text-right">
                     <button
                       onClick={() => setShowDeleteForm(true)}
-                      className="text-[10px] text-slate-600 hover:text-red-400 transition-colors cursor-pointer uppercase tracking-widest font-black"
+                      className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--danger-text)]"
                     >
                       申请下架 (TAKE DOWN)
                     </button>
                   </div>
                 ) : (
                   <div className="flex flex-col space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">申请下架原因 (TAKE DOWN REASON)</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">申请下架原因 (TAKE DOWN REASON)</label>
                     <div className="flex gap-2">
                       <input 
                         type="text" 
                         value={deleteReason}
                         onChange={(e) => setDeleteReason(e.target.value)}
                         placeholder="例如：图片失效、侵权、内容过时..."
-                        className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-blue-500/50 transition-all"
+                        className="theme-input flex-grow rounded-xl px-4 py-2 text-xs"
                       />
                       <button
                         disabled={isDeleting || !deleteReason.trim()}
                         onClick={() => handleDeleteRequest(selectedItem)}
-                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-[10px] font-black rounded-xl border border-red-500/30 transition-all uppercase disabled:opacity-50"
+                        className="theme-danger-button rounded-xl px-4 py-2 text-[10px] font-black uppercase disabled:opacity-50"
                       >
                         {isDeleting ? '提交中' : '确认申请'}
                       </button>
                       <button
                         onClick={() => { setShowDeleteForm(false); setDeleteReason(''); }}
-                        className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-black rounded-xl border border-white/10 transition-all uppercase"
+                        className="theme-secondary-button rounded-xl px-4 py-2 text-[10px] font-black uppercase"
                       >
                         取消
                       </button>
                     </div>
-                    <p className="text-[9px] text-slate-500 italic leading-none">提交后将通过 GitHub App 自动创建删除 Pull Request。</p>
+                    <p className="text-[9px] italic leading-none text-[var(--text-muted)]">提交后将通过 GitHub App 自动创建删除 Pull Request。</p>
                   </div>
                 )}
               </div>
