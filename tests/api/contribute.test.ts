@@ -18,9 +18,9 @@ describe('inferMediaTypeFromUrl', () => {
 });
 
 describe('validateCreateContributionInput', () => {
-  it('rejects empty titles', () => {
+  it('rejects empty prompts', () => {
     expect(validateCreateContributionInput({
-      title: '   ',
+      prompt: '   ',
       mediaUrl: 'https://cdn.example.com/demo.png',
       file: null,
     })).toEqual({
@@ -33,13 +33,13 @@ describe('validateCreateContributionInput', () => {
     const file = new File(['demo'], 'demo.png', { type: 'image/png' });
 
     expect(validateCreateContributionInput({
-      title: 'Demo',
+      prompt: 'Draw a city',
       mediaUrl: '',
       file: null,
     }).error).toBe('Provide either a media file or a media URL');
 
     expect(validateCreateContributionInput({
-      title: 'Demo',
+      prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo.png',
       file,
     }).error).toBe('Provide either a media file or a media URL');
@@ -49,7 +49,7 @@ describe('validateCreateContributionInput', () => {
     const videoFile = new File(['demo'], 'demo.mp4', { type: 'video/mp4' });
 
     expect(validateCreateContributionInput({
-      title: 'Demo',
+      prompt: 'Draw a city',
       mediaUrl: '',
       file: videoFile,
     })).toEqual({
@@ -58,7 +58,7 @@ describe('validateCreateContributionInput', () => {
     });
 
     expect(validateCreateContributionInput({
-      title: 'Demo',
+      prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo.webp',
       file: null,
     })).toEqual({
@@ -69,7 +69,7 @@ describe('validateCreateContributionInput', () => {
 
   it('rejects media urls without a direct asset extension', () => {
     expect(validateCreateContributionInput({
-      title: 'Demo',
+      prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo',
       file: null,
     })).toEqual({
@@ -92,7 +92,6 @@ describe('normalizeTagList', () => {
 describe('buildContributionIndexMd', () => {
   it('builds frontmatter with optional urls and normalized tags', () => {
     const markdown = buildContributionIndexMd({
-      title: 'Demo',
       description: 'A demo prompt',
       prompt: '### Prompt\nDraw a city',
       tags: 'portrait,  cinematic , ,  neon  ',
@@ -104,6 +103,7 @@ describe('buildContributionIndexMd', () => {
     });
 
     expect(markdown).toContain('tags: ["portrait", "cinematic", "neon"]');
+    expect(markdown).not.toContain('title:');
     expect(markdown).toContain('mediaUrl: "https://cdn.example.com/demo.png"');
     expect(markdown).toContain('sourceUrl: "https://example.com/source"');
     expect(markdown).toContain('### 提示词 (Prompt)\n### Prompt\nDraw a city');

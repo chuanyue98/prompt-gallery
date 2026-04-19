@@ -21,7 +21,6 @@ const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 type MediaType = 'video' | 'image';
 
 interface CreateContributionInput {
-  title: string;
   description: string;
   prompt: string;
   tags: string;
@@ -34,6 +33,23 @@ interface CreateContributionInput {
 interface ValidationResult {
   error: string | null;
   mediaType: MediaType | null;
+}
+
+function buildContributionSlug(input: {
+  prompt: string;
+  description: string;
+  model: string;
+  mediaUrl: string;
+  file: File | null;
+}) {
+  const preferredSource = input.description.trim()
+    || input.prompt.trim().split('\n').find(Boolean)?.trim()
+    || input.model.trim()
+    || input.mediaUrl.trim()
+    || input.file?.name
+    || 'prompt-gallery';
+
+  return slugify(preferredSource);
 }
 
 export function inferMediaTypeFromUrl(url: string): MediaType | null {
@@ -58,8 +74,8 @@ function inferMediaTypeFromFile(file: File | null): MediaType | null {
   return file.type.startsWith('video') ? 'video' : 'image';
 }
 
-export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'title' | 'mediaUrl' | 'file'>): ValidationResult {
-  if (!input.title.trim()) {
+export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'prompt' | 'mediaUrl' | 'file'>): ValidationResult {
+  if (!input.prompt.trim()) {
     return { error: 'Missing required fields', mediaType: null };
   }
 
@@ -84,7 +100,6 @@ export function normalizeTagList(tags: string): string[] {
 }
 
 export function buildContributionIndexMd(input: {
-  title: string;
   description: string;
   prompt: string;
   tags: string;
@@ -99,7 +114,6 @@ export function buildContributionIndexMd(input: {
     .join(', ');
 
   return `---
-title: "${input.title}"
 description: "${input.description}"
 tags: [${normalizedTags}]
 model: "${input.model}"
@@ -148,7 +162,6 @@ export async function POST(req: NextRequest) {
 
 async function handleCreate(req: NextRequest, octokit: Octokit) {
   const formData = await req.formData();
-  const title = ((formData.get('title') as string) || '').trim();
   const description = (formData.get('description') as string) || '';
   const prompt = (formData.get('prompt') as string) || '';
   const tags = (formData.get('tags') as string) || '';
@@ -157,7 +170,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
   const uploadedFile = formData.get('file');
   const file = uploadedFile instanceof File && uploadedFile.size > 0 ? uploadedFile : null;
-  const validation = validateCreateContributionInput({ title, mediaUrl, file });
+  const validation = validateCreateContributionInput({ prompt, mediaUrl, file });
 
   if (validation.error) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -168,13 +181,12 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   }
 
   // 1. 准备文件数据
-  const slug = slugify(title);
+  const slug = buildContributionSlug({ prompt, description, model, mediaUrl, file });
   const mediaType = validation.mediaType;
   const fileName = file?.name || mediaUrl;
   const fileBuffer = file ? await file.arrayBuffer() : null;
   const fileBase64 = fileBuffer ? Buffer.from(fileBuffer).toString('base64') : null;
   const indexMd = buildContributionIndexMd({
-    title,
     description,
     prompt,
     tags,
@@ -209,7 +221,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
     owner: REPO_OWNER,
     repo: REPO_NAME,
     path: `public/data/${targetDir}/${slug}/index.md`,
-    message: `Add prompt: ${title}`,
+    message: `Add prompt: ${slug}`,
     content: Buffer.from(indexMd).toString('base64'),
     branch: branchName,
   });
@@ -220,7 +232,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: `public/data/${targetDir}/${slug}/${fileName}`,
-      message: `Add media for: ${title}`,
+      message: `Add media for: ${slug}`,
       content: fileBase64,
       branch: branchName,
     });
@@ -230,10 +242,10 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   const { data: pr } = await octokit.rest.pulls.create({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    title: `🎨 社区投稿: ${title}`,
+    title: `🎨 社区投稿: ${slug}`,
     head: branchName,
     base: 'main',
-    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **作品**: ${title}\n- **描述**: ${description}\n- **模型**: ${model}\n- **媒体**: ${mediaUrl || '本地上传'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n请在本地预览后点击 Merge。`,
+    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **标识**: ${slug}\n- **描述**: ${description || '未提供'}\n- **模型**: ${model || '未提供'}\n- **媒体**: ${mediaUrl || '本地上传'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n请在本地预览后点击 Merge。`,
   });
 
   return NextResponse.json({ success: true, prUrl: pr.html_url });
@@ -241,7 +253,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
 
 async function handleDelete(req: NextRequest, octokit: Octokit) {
   const body = await req.json();
-  const { slug, type, title, reason } = body;
+  const { slug, type, reason } = body;
 
   if (!slug || !type) {
     return NextResponse.json({ error: 'Missing slug or type' }, { status: 400 });
@@ -304,7 +316,7 @@ async function handleDelete(req: NextRequest, octokit: Octokit) {
   const { data: newCommit } = await octokit.rest.git.createCommit({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    message: `Delete prompt: ${title || slug}${displayReason}`,
+    message: `Delete prompt: ${slug}${displayReason}`,
     tree: newTree.sha,
     parents: [mainSha],
   });
@@ -322,10 +334,10 @@ async function handleDelete(req: NextRequest, octokit: Octokit) {
   const { data: pr } = await octokit.rest.pulls.create({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    title: `🗑️ 删除申请: ${title || slug}${displayReason}`,
+    title: `🗑️ 删除申请: ${slug}${displayReason}`,
     head: branchName,
     base: 'main',
-    body: `**来自 Prompt Gallery 的自动化删除申请**\n\n- **作品**: ${title || slug}\n- **标识**: ${slug}\n- **原因**: ${reason || '未说明'}\n\n该操作将永久删除对应的数据文件夹，请核实后 Merge。`,
+    body: `**来自 Prompt Gallery 的自动化删除申请**\n\n- **标识**: ${slug}\n- **原因**: ${reason || '未说明'}\n\n该操作将永久删除对应的数据文件夹，请核实后 Merge。`,
   });
 
   return NextResponse.json({ success: true, prUrl: pr.html_url });

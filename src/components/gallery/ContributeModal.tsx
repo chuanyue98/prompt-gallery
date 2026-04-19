@@ -11,7 +11,7 @@ interface ContributeModalProps {
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
+  const [formData, setFormData] = useState({ description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
 
@@ -55,7 +55,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         onClose();
         setFile(null);
         setPreview(null);
-        setFormData({ title: '', description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
+        setFormData({ description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
         setSubmissionMode('upload');
       } else {
         throw new Error(result.error);
@@ -105,9 +105,8 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
 
         {/* Right: Form */}
         <form onSubmit={handleSubmit} className="w-full md:w-1/2 p-10 space-y-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-black text-white leading-none">我要投稿</h2>
-            <button type="button" onClick={onClose} className="text-slate-500 hover:text-white transition-colors">✕</button>
+          <div className="mb-2 flex justify-end">
+            <button aria-label="关闭投稿弹层" type="button" onClick={onClose} className="text-slate-500 hover:text-white transition-colors">✕</button>
           </div>
 
           <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
@@ -135,11 +134,6 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">作品标题</label>
-              <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="例如：赛博深海 - 遗落神殿" />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">模型 (Engine)</label>
@@ -149,6 +143,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">标签 (逗号分隔)</label>
                 <input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none" placeholder="科幻, 电影感, 写实" />
               </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">描述 (可选)</label>
+              <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none transition-all resize-none" placeholder="补充画面风格、主体或用途，帮助区分作品。" />
             </div>
 
             <div>

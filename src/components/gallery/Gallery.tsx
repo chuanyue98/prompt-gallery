@@ -17,8 +17,7 @@ export function filterGalleryItems(items: GalleryItem[], search: string, categor
   const normalizedSearch = search.toLowerCase();
 
   return items.filter((item) => {
-    const matchesSearch = item.title.toLowerCase().includes(normalizedSearch)
-      || item.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
+    const matchesSearch = item.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
       || item.description.toLowerCase().includes(normalizedSearch);
     const matchesCategory = category === 'all' || item.media[0].type === category;
 
@@ -34,6 +33,16 @@ export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover') {
   }
 
   return `${item.mediaPath}${asset}`;
+}
+
+function safelyPlayVideo(video: HTMLVideoElement) {
+  const playPromise = video.play();
+
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(() => {
+      // Ignore codec/source failures for hover previews.
+    });
+  }
 }
 
 export default function Gallery() {
@@ -115,7 +124,6 @@ export default function Gallery() {
         body: JSON.stringify({
           slug: item.slug,
           type: item.media[0].type,
-          title: item.title,
           reason: deleteReason.trim(),
         }),
       });
@@ -146,35 +154,47 @@ export default function Gallery() {
   const filteredItems = filterGalleryItems(items, search, category);
 
   return (
-    <div className="max-w-[1800px] mx-auto px-6 lg:px-12">
-      <div className="max-w-4xl mx-auto mb-16 space-y-6">
+    <div className="mx-auto max-w-[1800px]">
+      <div className="mx-auto mb-10 max-w-3xl space-y-4">
         <div className="relative group">
-          <input type="text" placeholder="搜索灵感..." onChange={(e) => setSearch(e.target.value)} className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-blue-500/50 outline-none backdrop-blur-md transition-all" />
+          <input type="text" placeholder="搜索灵感..." onChange={(e) => setSearch(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pr-5 pl-13 text-white outline-none transition-all backdrop-blur-md focus:ring-2 focus:ring-blue-500/50" />
           <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
         </div>
 
         <div className="flex justify-center p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit mx-auto backdrop-blur-md">
           {(['all', 'video', 'image'] as const).map((cat) => (
-            <button key={cat} onClick={() => setCategory(cat)} className={`px-8 py-2.5 rounded-xl font-bold transition-all text-sm ${category === cat ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            <button key={cat} onClick={() => setCategory(cat)} className={`rounded-xl px-6 py-2 text-xs font-bold transition-all sm:px-8 sm:text-sm ${category === cat ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               {cat === 'all' ? '全部' : cat === 'video' ? '视频' : '图片'}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
         {filteredItems.map(item => (
           <div key={item.slug} className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-0 group-hover:opacity-20 blur-xl transition duration-500" />
             <div className="relative h-full bg-[#0F0F0F] rounded-[2rem] overflow-hidden border border-white/5 flex flex-col transition-all duration-500 hover:-translate-y-2 shadow-2xl">
-              <div className="relative aspect-[4/3] cursor-pointer overflow-hidden" onClick={() => setSelectedItem(item)}>
+              <div
+                className="relative aspect-[4/3] cursor-pointer overflow-hidden"
+                role="button"
+                tabIndex={0}
+                aria-label={`打开作品详情: ${item.slug}`}
+                onClick={() => setSelectedItem(item)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedItem(item);
+                  }
+                }}
+              >
                 {item.media[0].type === 'video' && isVideoAsset(getGalleryMediaUrl(item, 'cover')) ? (
                   <video src={getGalleryMediaUrl(item, 'cover')} className="w-full h-full object-cover" muted playsInline />
                 ) : isExternalUrl(getGalleryMediaUrl(item, 'cover')) ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={getGalleryMediaUrl(item, 'cover')} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <img src={getGalleryMediaUrl(item, 'cover')} alt={item.description || item.slug} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
-                  <Image src={getGalleryMediaUrl(item, 'cover')} alt={item.title} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
+                  <Image src={getGalleryMediaUrl(item, 'cover')} alt={item.description || item.slug} className="object-cover transition-transform duration-700 group-hover:scale-110" fill unoptimized />
                 )}
                 {item.media[0].type === 'video' && (
                   <video
@@ -183,34 +203,37 @@ export default function Gallery() {
                     muted
                     loop
                     onMouseEnter={(e) => {
-                      void e.currentTarget.play();
+                      safelyPlayVideo(e.currentTarget);
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.pause();
                     }}
                   />
                 )}
-                {item.media[0].type === 'video' && <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[10px] font-black text-white uppercase tracking-tighter border border-white/10">Motion</div>}
+                {item.media[0].type === 'video' && <div className="absolute top-3 right-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-lg text-[9px] font-black text-white uppercase tracking-tighter border border-white/10">Motion</div>}
                 
                 {/* 模型标签：左上角 */}
                 {item.model && (
-                  <div className="absolute top-4 left-4 px-2 py-1 bg-white/10 backdrop-blur-md rounded-lg text-[9px] font-bold text-slate-300 uppercase tracking-widest border border-white/5">
+                  <div
+                    data-testid={`model-badge-${item.slug}`}
+                    className="absolute top-3 left-3 rounded-lg border border-cyan-300/40 bg-cyan-400/18 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.18)] backdrop-blur-md"
+                  >
                     {item.model}
                   </div>
                 )}
 
                 {/* 快捷复制按钮：仅在悬停时显示 */}
                 <button 
+                  aria-label={`${item.slug} quick copy`}
                   onClick={(e) => { e.stopPropagation(); handleCopy(item.content, item.slug); }}
-                  className={`absolute bottom-4 right-4 px-4 py-2 rounded-xl text-[10px] font-bold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 border ${copiedSlug === item.slug ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-black/50 text-white border-white/20 hover:bg-white hover:text-black'}`}
+                  className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-xl text-[9px] font-bold backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 border ${copiedSlug === item.slug ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'bg-black/50 text-white border-white/20 hover:bg-white hover:text-black'}`}
                 >
                   {copiedSlug === item.slug ? 'SUCCESS' : 'QUICK COPY'}
                 </button>
               </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 leading-tight mb-3 cursor-pointer" onClick={() => setSelectedItem(item)}>{item.title}</h3>
-                <div className="mt-auto pt-4 border-t border-white/5 flex flex-wrap gap-1.5">
-                  {item.tags.map(tag => <span key={tag} className="px-2 py-0.5 bg-white/5 text-slate-500 text-[9px] font-bold uppercase rounded-full border border-white/5">{tag}</span>)}
+              <div className="p-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {item.tags.slice(0, 4).map(tag => <span key={tag} className="px-2 py-0.5 bg-white/5 text-slate-500 text-[8px] font-bold uppercase rounded-full border border-white/5 tracking-[0.14em]">{tag}</span>)}
                 </div>
               </div>
             </div>
@@ -241,24 +264,33 @@ export default function Gallery() {
                   <video src={getGalleryMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
               ) : isExternalUrl(getGalleryMediaUrl(selectedItem, 'cover')) ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={getGalleryMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.title} />
+                <img src={getGalleryMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.description || selectedItem.slug} />
               ) : (
-                <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.title} fill unoptimized />
+                <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.description || selectedItem.slug} fill unoptimized />
               )}
             </div>
-            <div className="w-full md:w-2/5 p-12 overflow-y-auto">
-              <div className="flex justify-between items-center mb-10">
-                <div className="space-y-1">
-                  <h2 className="text-3xl font-black text-white leading-none">{selectedItem.title}</h2>
-                  <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em]">Source Code Available</p>
+            <div className="w-full md:w-2/5 p-8 lg:p-10 overflow-y-auto">
+              <div className="flex justify-between items-start gap-4 mb-8">
+                <div className="flex flex-wrap gap-2">
+                  {selectedItem.model && (
+                    <span className="rounded-full border border-cyan-300/40 bg-cyan-400/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]">
+                      {selectedItem.model}
+                    </span>
+                  )}
+                  {selectedItem.tags.slice(0, 4).map((tag) => (
+                    <span key={tag} className="rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                      {tag}
+                    </span>
+                  ))}
                 </div>
-                <button onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white border border-white/10">✕</button>
+                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white border border-white/10">✕</button>
               </div>
-              <div className="mb-10"><label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3 block">Perspective</label><p className="text-slate-300 text-base leading-relaxed">{selectedItem.description}</p></div>
-              <div className="mb-10">
-                <div className="flex justify-between items-end mb-4">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Syntax</label>
-                  <button onClick={() => handleCopy(selectedItem.content, 'modal')} className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${copiedSlug === 'modal' ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'text-blue-400 border-blue-500/30'}`}>{copiedSlug === 'modal' ? 'Copied' : 'Instant Copy'}</button>
+              <div className="mb-8">
+                <p className="text-slate-300 text-base leading-relaxed">{selectedItem.description}</p>
+              </div>
+              <div className="mb-8">
+                <div className="flex justify-end mb-3">
+                  <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${copiedSlug === 'modal' ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'text-blue-400 border-blue-500/30'}`}>{copiedSlug === 'modal' ? 'Copied' : 'Instant Copy'}</button>
                 </div>
                 <div className="relative group/code">
                   <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl blur opacity-20" />
@@ -277,10 +309,6 @@ export default function Gallery() {
                   </a>
                 </div>
               )}
-              <div className="grid grid-cols-1 gap-8 py-8 border-t border-white/5">
-                <div><label className="text-[9px] text-slate-600 uppercase block tracking-widest mb-1">Engine</label><p className="text-white font-bold">{selectedItem.model || 'N/A'}</p></div>
-              </div>
-
               {/* 申请下架入口：内联输入逻辑 */}
               <div className="mt-4 pt-4 border-t border-white/5">
                 {deleteSuccess ? (

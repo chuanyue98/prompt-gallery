@@ -27,30 +27,7 @@ export default function Home() {
         </svg>
       </div>
 
-      <header className="relative z-10 pt-40 pb-20 text-center px-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-[10px] font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-500/5 border border-blue-500/20 rounded-full backdrop-blur-md">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-          </span>
-          Intelligence x Visuals
-        </div>
-        
-        <h1 className="text-7xl md:text-8xl font-black mb-8 tracking-[-0.04em] leading-none">
-          <span className="text-white">Prompt</span>
-          <span className="relative inline-block ml-4">
-            <span className="absolute -inset-1 bg-blue-500 blur-2xl opacity-20"></span>
-            <span className="relative bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Gallery</span>
-          </span>
-        </h1>
-        
-        <p className="text-slate-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed tracking-tight text-center px-6">
-          一个专注于 AIGC 提示词美学与工程的灵感库。<br/>
-          <span className="text-slate-400">在这里，每一行文字都能幻化为惊艳的镜头。</span>
-        </p>
-      </header>
-
-      <div className="relative z-10 max-w-[1440px] mx-auto pb-20">
+      <div className="relative z-10 max-w-[1440px] mx-auto px-4 pt-28 pb-20 sm:px-6 lg:px-8">
         <Gallery />
       </div>
 

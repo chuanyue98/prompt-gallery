@@ -35,6 +35,9 @@ async function sync() {
 
       const fileContent = await fs.readFile(indexPath, 'utf-8');
       const { data, content } = matter(fileContent);
+      const restData = { ...(data as Record<string, unknown>) };
+      delete restData.title;
+      delete restData.seed;
 
       const files = await fs.readdir(itemPath);
       
@@ -71,7 +74,7 @@ async function sync() {
 
       galleryData.push({
         slug,
-        ...data,
+        ...restData,
         content,
         type,
         mediaPath,
