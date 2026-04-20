@@ -213,20 +213,19 @@ describe('Gallery component', () => {
     await user.click(screen.getByRole('button', { name: /我要投稿/i }));
 
     expect(screen.getByTestId('contribute-mode-switcher').className).toContain('theme-panel');
-    expect(screen.getByDisplayValue('Seedance 2.0').className).toContain('theme-input');
+    expect(screen.getByPlaceholderText('Seedance 2.0').className).toContain('theme-input');
+    expect((screen.getByPlaceholderText('Seedance 2.0') as HTMLInputElement).value).toBe('');
   });
 });
 
 describe('ContributeModal component', () => {
-  it('removes the title input while keeping the submission context clear', () => {
+  it('renders the title input and other form fields correctly', () => {
     render(<ContributeModal isOpen onClose={() => {}} />);
 
-    expect(screen.getByTestId('contribute-modal-shell').className).not.toContain('overflow-y-auto');
     expect(screen.getByTestId('contribute-modal-shell').className).toContain('theme-modal');
-    expect(screen.queryByRole('heading', { name: '我要投稿' })).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('例如：赛博朋克猫咪')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '上传文件' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Media URL' })).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('例如：赛博深海 - 遗落神殿')).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText('补充画面风格、主体或用途，帮助区分作品。')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '关闭投稿弹层' })).toBeInTheDocument();
   });

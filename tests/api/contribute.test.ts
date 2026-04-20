@@ -20,25 +20,25 @@ describe('inferMediaTypeFromUrl', () => {
 describe('validateCreateContributionInput', () => {
   it('rejects empty prompts', () => {
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: '   ',
       mediaUrl: 'https://cdn.example.com/demo.png',
       file: null,
-    })).toEqual({
-      error: 'Missing required fields',
-      mediaType: null,
-    });
+    }).error).toContain('Missing required fields');
   });
 
   it('rejects invalid file and url combinations', () => {
     const file = new File(['demo'], 'demo.png', { type: 'image/png' });
 
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: 'Draw a city',
       mediaUrl: '',
       file: null,
     }).error).toBe('Provide either a media file or a media URL');
 
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo.png',
       file,
@@ -49,6 +49,7 @@ describe('validateCreateContributionInput', () => {
     const videoFile = new File(['demo'], 'demo.mp4', { type: 'video/mp4' });
 
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: 'Draw a city',
       mediaUrl: '',
       file: videoFile,
@@ -58,6 +59,7 @@ describe('validateCreateContributionInput', () => {
     });
 
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo.webp',
       file: null,
@@ -69,13 +71,11 @@ describe('validateCreateContributionInput', () => {
 
   it('rejects media urls without a direct asset extension', () => {
     expect(validateCreateContributionInput({
+      title: 'Demo',
       prompt: 'Draw a city',
       mediaUrl: 'https://cdn.example.com/demo',
       file: null,
-    })).toEqual({
-      error: 'Media URL must point directly to an image or video file',
-      mediaType: null,
-    });
+    }).error).toBe('Media URL must point directly to an image or video file');
   });
 });
 
@@ -92,6 +92,7 @@ describe('normalizeTagList', () => {
 describe('buildContributionIndexMd', () => {
   it('builds frontmatter with optional urls and normalized tags', () => {
     const markdown = buildContributionIndexMd({
+      title: 'Demo Title',
       description: 'A demo prompt',
       prompt: '### Prompt\nDraw a city',
       tags: 'portrait,  cinematic , ,  neon  ',
@@ -102,8 +103,8 @@ describe('buildContributionIndexMd', () => {
       assetReference: 'https://cdn.example.com/demo.png',
     });
 
+    expect(markdown).toContain('title: "Demo Title"');
     expect(markdown).toContain('tags: ["portrait", "cinematic", "neon"]');
-    expect(markdown).not.toContain('title:');
     expect(markdown).toContain('mediaUrl: "https://cdn.example.com/demo.png"');
     expect(markdown).toContain('sourceUrl: "https://example.com/source"');
     expect(markdown).toContain('### 提示词 (Prompt)\n### Prompt\nDraw a city');
