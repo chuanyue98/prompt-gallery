@@ -102,6 +102,17 @@ export default function Gallery() {
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedItem) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedItem]);
+
   const handleCopy = async (text: string, slug: string) => {
     if (await copyToClipboard(text)) {
       setCopiedSlug(slug);
@@ -284,8 +295,8 @@ export default function Gallery() {
                 <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.description || selectedItem.slug} fill unoptimized />
               )}
             </div>
-            <div className="w-full md:w-2/5 p-8 lg:p-10 overflow-y-auto">
-              <div className="flex justify-between items-start gap-4 mb-8">
+            <div className="w-full md:w-2/5 flex flex-col p-8 lg:p-10 overflow-hidden">
+              <div className="flex justify-between items-start gap-4 mb-6 shrink-0">
                 <div className="flex flex-wrap gap-2">
                   {selectedItem.model && (
                     <span className="theme-model-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em]">
@@ -298,78 +309,90 @@ export default function Gallery() {
                     </span>
                   ))}
                 </div>
-                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full">✕</button>
+                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full shrink-0">✕</button>
               </div>
-              <div className="mb-8">
-                <p className="text-base leading-relaxed text-[var(--text-secondary)]">{selectedItem.description}</p>
-              </div>
-              <div className="mb-8">
-                <div className="flex justify-end mb-3">
-                  <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`rounded px-2 py-0.5 text-[10px] font-black uppercase ${copiedSlug === 'modal' ? 'theme-success-surface' : 'theme-copy-button'}`}>{copiedSlug === 'modal' ? 'Copied' : 'Instant Copy'}</button>
+              
+              <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                <div className="mb-8">
+                  <p className="text-base leading-relaxed text-[var(--text-secondary)]">{selectedItem.description}</p>
                 </div>
-                <div className="relative group/code">
-                  <div className="absolute -inset-1 rounded-2xl opacity-20 blur" style={{ background: 'var(--surface-accent)' }} />
-                  <div className="theme-panel-strong relative rounded-2xl p-6 text-sm font-mono whitespace-pre-wrap leading-loose text-[var(--text-primary)]">{selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}</div>
-                </div>
-              </div>
-              {selectedItem.sourceUrl && (
-                <div className="mb-10">
-                  <a
-                    href={selectedItem.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="theme-secondary-button inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold"
-                  >
-                    查看来源
-                  </a>
-                </div>
-              )}
-              {/* 申请下架入口：内联输入逻辑 */}
-              <div className="mt-4 border-t border-[var(--border-soft)] pt-4">
-                {deleteSuccess ? (
-                  <div className="theme-success-surface flex items-center justify-center rounded-2xl py-4 animate-in zoom-in-95 duration-500">
-                    <div className="text-center">
-                      <span className="mb-1 block text-sm font-black uppercase tracking-widest">✅ 申请已提交</span>
-                      <p className="text-[10px] opacity-80">GitHub PR 已创建，请等待管理员审核</p>
-                    </div>
-                  </div>
-                ) : !showDeleteForm ? (
-                  <div className="text-right">
-                    <button
-                      onClick={() => setShowDeleteForm(true)}
-                      className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--danger-text)]"
-                    >
-                      申请下架 (TAKE DOWN)
+                
+                <div className="mb-8">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">提示词 (Prompt)</h4>
+                    <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`rounded px-2.5 py-1 text-[9px] font-black uppercase transition-all ${copiedSlug === 'modal' ? 'theme-success-surface' : 'theme-copy-button'}`}>
+                      {copiedSlug === 'modal' ? 'Copied ✓' : 'Copy Prompt'}
                     </button>
                   </div>
-                ) : (
-                  <div className="flex flex-col space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">申请下架原因 (TAKE DOWN REASON)</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={deleteReason}
-                        onChange={(e) => setDeleteReason(e.target.value)}
-                        placeholder="例如：图片失效、侵权、内容过时..."
-                        className="theme-input flex-grow rounded-xl px-4 py-2 text-xs"
-                      />
-                      <button
-                        disabled={isDeleting || !deleteReason.trim()}
-                        onClick={() => handleDeleteRequest(selectedItem)}
-                        className="theme-danger-button rounded-xl px-4 py-2 text-[10px] font-black uppercase disabled:opacity-50"
-                      >
-                        {isDeleting ? '提交中' : '确认申请'}
-                      </button>
-                      <button
-                        onClick={() => { setShowDeleteForm(false); setDeleteReason(''); }}
-                        className="theme-secondary-button rounded-xl px-4 py-2 text-[10px] font-black uppercase"
-                      >
-                        取消
-                      </button>
+                  <div className="relative group/code">
+                    <div className="absolute -inset-1 rounded-2xl opacity-15 blur" style={{ background: 'var(--surface-accent)' }} />
+                    <div className="theme-panel-strong relative max-h-[400px] overflow-y-auto rounded-2xl p-6 text-sm font-mono whitespace-pre-wrap leading-loose text-[var(--text-primary)] custom-scrollbar">
+                      {selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}
                     </div>
-                    <p className="text-[9px] italic leading-none text-[var(--text-muted)]">提交后将通过 GitHub App 自动创建删除 Pull Request。</p>
+                  </div>
+                </div>
+
+                {selectedItem.sourceUrl && (
+                  <div className="mb-10">
+                    <a
+                      href={selectedItem.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="theme-secondary-button inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold w-full md:w-auto"
+                    >
+                      查看来源 (VIEW SOURCE)
+                    </a>
                   </div>
                 )}
+                
+                {/* 申请下架入口 */}
+                <div className="mt-4 border-t border-[var(--border-soft)] pt-6 pb-2">
+                  {deleteSuccess ? (
+                    <div className="theme-success-surface flex items-center justify-center rounded-2xl py-4 animate-in zoom-in-95 duration-500">
+                      <div className="text-center">
+                        <span className="mb-1 block text-sm font-black uppercase tracking-widest">✅ 申请已提交</span>
+                        <p className="text-[10px] opacity-80">GitHub PR 已创建，请等待管理员审核</p>
+                      </div>
+                    </div>
+                  ) : !showDeleteForm ? (
+                    <div className="text-right">
+                      <button
+                        onClick={() => setShowDeleteForm(true)}
+                        className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--danger-text)]"
+                      >
+                        申请下架 (TAKE DOWN)
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">申请下架原因</label>
+                      <div className="flex flex-col gap-2">
+                        <input 
+                          type="text" 
+                          value={deleteReason}
+                          onChange={(e) => setDeleteReason(e.target.value)}
+                          placeholder="例如：图片失效、侵权..."
+                          className="theme-input w-full rounded-xl px-4 py-2.5 text-xs"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            disabled={isDeleting || !deleteReason.trim()}
+                            onClick={() => handleDeleteRequest(selectedItem)}
+                            className="theme-danger-button flex-grow rounded-xl px-4 py-2 text-[10px] font-black uppercase disabled:opacity-50"
+                          >
+                            {isDeleting ? '提交中' : '确认申请'}
+                          </button>
+                          <button
+                            onClick={() => { setShowDeleteForm(false); setDeleteReason(''); }}
+                            className="theme-secondary-button rounded-xl px-4 py-2 text-[10px] font-black uppercase"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

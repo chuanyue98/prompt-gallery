@@ -39,7 +39,7 @@ export default function Home() {
         </svg>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1440px] px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+      <div className="relative z-20 mx-auto max-w-[1440px] px-4 pt-28 pb-20 sm:px-6 lg:px-8">
         <Gallery />
       </div>
 
