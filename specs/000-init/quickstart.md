@@ -43,14 +43,14 @@ npm run dev
 
 1. 点击“我要投稿”
 2. 上传图片或视频
-3. 填写标题、描述、Prompt、标签和模型
+3. 填写标题（Title）、描述、Prompt、标签和模型
 4. 提交表单
 
 预期结果：
 
-- 服务端创建 `contribution/{slug}` 分支
-- 新增 `public/data/{images|videos}/{slug}/index.md`
-- 生成一条投稿 Pull Request
+- 服务端根据标题生成 `contribution/{标题}-{5位随机码}` 分支
+- 新增 `public/data/{images|videos}/{标题}-{5位随机码}/index.md`
+- 生成一条标题为 `🎨 社区投稿: {标题}` 的 Pull Request
 
 ## 5. 验证本地投稿工作流
 

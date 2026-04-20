@@ -11,7 +11,7 @@ interface ContributeModalProps {
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
+  const [formData, setFormData] = useState({ title: '', description: '', prompt: '', tags: '', model: '', mediaUrl: '', sourceUrl: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
 
@@ -32,6 +32,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     e.preventDefault();
     const hasFile = Boolean(file);
     const hasMediaUrl = formData.mediaUrl.trim().length > 0;
+
+    if (!formData.title.trim()) {
+      alert('请填写作品标题。');
+      return;
+    }
 
     if ((hasFile && hasMediaUrl) || (!hasFile && !hasMediaUrl)) {
       alert('请在上传图片/视频与填写 mediaUrl 之间二选一。');
@@ -55,7 +60,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         onClose();
         setFile(null);
         setPreview(null);
-        setFormData({ description: '', prompt: '', tags: '', model: 'Seedance 2.0', mediaUrl: '', sourceUrl: '' });
+        setFormData({ title: '', description: '', prompt: '', tags: '', model: '', mediaUrl: '', sourceUrl: '' });
         setSubmissionMode('upload');
       } else {
         throw new Error(result.error);
@@ -69,7 +74,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   };
 
   const hasMediaUrl = formData.mediaUrl.trim().length > 0;
-  const canSubmit = (Boolean(file) || hasMediaUrl) && !(Boolean(file) && hasMediaUrl);
+  const canSubmit = formData.title.trim().length > 0 && (Boolean(file) || hasMediaUrl) && !(Boolean(file) && hasMediaUrl);
 
   return (
     <div className="theme-overlay fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-xl animate-in fade-in duration-300">
@@ -134,6 +139,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
           </div>
 
           <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标题 (Title - 必填)</label>
+              <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="theme-input w-full rounded-xl px-4 py-3" placeholder="例如：赛博朋克猫咪" />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">模型 (Engine)</label>

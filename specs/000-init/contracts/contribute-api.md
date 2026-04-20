@@ -10,7 +10,7 @@
 
 **字段**
 
-- `title` (required)
+- `title` (required): 作品标题，将直接用于生成文件夹名称。
 - `description` (optional)
 - `prompt` (required)
 - `tags` (optional, comma separated)
@@ -22,7 +22,10 @@
 
 1. 校验 `title`、`prompt` 与媒体输入。
 2. 根据文件 MIME 或 `mediaUrl` 后缀推断媒体类型。
-3. 生成稳定 slug。
+3. **路径生成规则**:
+   - 清理 `title` 中的非法文件路径字符（如 `/ \ : * ? " < > |`）。
+   - 拼接 5 位简短随机码以确保唯一性：`{Title}-{Random5}`。
+   - 文件夹名直接支持中文字符。
 4. 创建投稿分支 `contribution/{slug}`。
 5. 写入 `public/data/{images|videos}/{slug}/index.md`。
 6. 若存在本地上传文件，同时写入对应媒体文件。

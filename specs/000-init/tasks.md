@@ -33,7 +33,7 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 **目的**: 搭建所有用户故事共享的数据结构、工具函数与内容目录约定
 
 - [ ] T004 定义 `src/types/gallery.ts` 中的 `GalleryItem`、`Media` 等基础类型
-- [ ] T005 [P] 实现 `src/lib/utils.ts` 中的复制、slug 生成与通用辅助函数
+- [ ] T005 [P] 实现 `src/lib/utils.ts` 中的复制、基于“标题-5位随机数”的路径生成与通用辅助函数
 - [ ] T006 [P] 创建 `public/data/images/`、`public/data/videos/` 示例目录及示例 `index.md`
 - [ ] T007 实现 `scripts/sync.ts`，将 `public/data/` 内容生成到 `public/gallery-data.json`
 
@@ -85,7 +85,7 @@ description: "功能实施的任务列表：初始化 Prompt Gallery 基线"
 
 ### 用户故事 3 的实施
 
-- [ ] T018 [US3] 扩展 `scripts/sync.ts`，支持从 Frontmatter、正文与目录文件推导完整媒体信息
+- [ ] T018 [US3] 扩展 `scripts/sync.ts`，支持从 Frontmatter、正文与目录文件推导完整媒体信息，并增加循环容错保护与详细日志
 - [ ] T019 [P] [US3] 在 `README.md` 中补充本地投稿与 `npm run sync` 使用说明
 - [ ] T020 [US3] 在 `public/data/` 下准备至少一组图片样例与一组视频样例，验证同步输出
 

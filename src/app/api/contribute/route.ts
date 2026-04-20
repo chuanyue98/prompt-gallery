@@ -36,20 +36,18 @@ interface ValidationResult {
 }
 
 function buildContributionSlug(input: {
-  prompt: string;
-  description: string;
-  model: string;
-  mediaUrl: string;
-  file: File | null;
+  title: string;
 }) {
-  const preferredSource = input.description.trim()
-    || input.prompt.trim().split('\n').find(Boolean)?.trim()
-    || input.model.trim()
-    || input.mediaUrl.trim()
-    || input.file?.name
-    || 'prompt-gallery';
+  const cleanTitle = input.title
+    .trim()
+    .replace(/[\/\s\\:?*"<>|]/g, '-') // 替换非法路径字符和空格为单一连字符
+    .replace(/-+/g, '-')              // 合并多个连字符
+    .replace(/^-+|-+$/g, '');         // 移除首尾连字符
 
-  return slugify(preferredSource);
+  const base = cleanTitle || 'contribution';
+  const randomSuffix = Math.random().toString(36).substring(2, 7); // 取 5 位随机码
+  
+  return `${base}-${randomSuffix}`;
 }
 
 export function inferMediaTypeFromUrl(url: string): MediaType | null {
@@ -74,9 +72,9 @@ function inferMediaTypeFromFile(file: File | null): MediaType | null {
   return file.type.startsWith('video') ? 'video' : 'image';
 }
 
-export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'prompt' | 'mediaUrl' | 'file'>): ValidationResult {
-  if (!input.prompt.trim()) {
-    return { error: 'Missing required fields', mediaType: null };
+export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'title' | 'prompt' | 'mediaUrl' | 'file'>): ValidationResult {
+  if (!input.title.trim() || !input.prompt.trim()) {
+    return { error: 'Missing required fields: title and prompt are mandatory', mediaType: null };
   }
 
   if ((!input.file && !input.mediaUrl) || (input.file && input.mediaUrl)) {
@@ -100,6 +98,7 @@ export function normalizeTagList(tags: string): string[] {
 }
 
 export function buildContributionIndexMd(input: {
+  title: string;
   description: string;
   prompt: string;
   tags: string;
@@ -114,9 +113,10 @@ export function buildContributionIndexMd(input: {
     .join(', ');
 
   return `---
-description: "${input.description}"
+title: "${input.title.replace(/"/g, '\\"')}"
+description: "${input.description.replace(/"/g, '\\"')}"
 tags: [${normalizedTags}]
-model: "${input.model}"
+model: "${input.model.replace(/"/g, '\\"')}"
 ${input.mediaUrl ? `mediaUrl: "${input.mediaUrl}"\n` : ''}${input.sourceUrl ? `sourceUrl: "${input.sourceUrl}"\n` : ''}media:
   - type: "${input.mediaType}"
     src: "${input.assetReference}"
@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
 
 async function handleCreate(req: NextRequest, octokit: Octokit) {
   const formData = await req.formData();
+  const title = (formData.get('title') as string) || '';
   const description = (formData.get('description') as string) || '';
   const prompt = (formData.get('prompt') as string) || '';
   const tags = (formData.get('tags') as string) || '';
@@ -170,7 +171,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
   const uploadedFile = formData.get('file');
   const file = uploadedFile instanceof File && uploadedFile.size > 0 ? uploadedFile : null;
-  const validation = validateCreateContributionInput({ prompt, mediaUrl, file });
+  const validation = validateCreateContributionInput({ title, prompt, mediaUrl, file });
 
   if (validation.error) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -181,12 +182,13 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   }
 
   // 1. 准备文件数据
-  const slug = buildContributionSlug({ prompt, description, model, mediaUrl, file });
+  const slug = buildContributionSlug({ title });
   const mediaType = validation.mediaType;
   const fileName = file?.name || mediaUrl;
   const fileBuffer = file ? await file.arrayBuffer() : null;
   const fileBase64 = fileBuffer ? Buffer.from(fileBuffer).toString('base64') : null;
   const indexMd = buildContributionIndexMd({
+    title,
     description,
     prompt,
     tags,
@@ -221,7 +223,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
     owner: REPO_OWNER,
     repo: REPO_NAME,
     path: `public/data/${targetDir}/${slug}/index.md`,
-    message: `Add prompt: ${slug}`,
+    message: `Add prompt: ${title}`,
     content: Buffer.from(indexMd).toString('base64'),
     branch: branchName,
   });
@@ -232,7 +234,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: `public/data/${targetDir}/${slug}/${fileName}`,
-      message: `Add media for: ${slug}`,
+      message: `Add media for: ${title}`,
       content: fileBase64,
       branch: branchName,
     });
@@ -242,10 +244,10 @@ async function handleCreate(req: NextRequest, octokit: Octokit) {
   const { data: pr } = await octokit.rest.pulls.create({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    title: `🎨 社区投稿: ${slug}`,
+    title: `🎨 社区投稿: ${title}`,
     head: branchName,
     base: 'main',
-    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **标识**: ${slug}\n- **描述**: ${description || '未提供'}\n- **模型**: ${model || '未提供'}\n- **媒体**: ${mediaUrl || '本地上传'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n请在本地预览后点击 Merge。`,
+    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **标题**: ${title}\n- **标识**: ${slug}\n- **描述**: ${description || '未提供'}\n- **模型**: ${model || '未提供'}\n- **媒体**: ${mediaUrl || '本地上传'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n请在本地预览后点击 Merge。`,
   });
 
   return NextResponse.json({ success: true, prUrl: pr.html_url });
