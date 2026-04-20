@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
-import { slugify } from '@/lib/utils';
 
 // ---------------------------------------------------------
 // 🚨 Vercel 环境变量说明：
@@ -21,6 +20,7 @@ const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 type MediaType = 'video' | 'image';
 
 interface CreateContributionInput {
+  title: string;
   description: string;
   prompt: string;
   tags: string;
