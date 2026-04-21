@@ -1,7 +1,7 @@
 ---
 title: "汉服拆解图"
 description: "GPT-image-2 生成汉服拆解图🤯图鉴式风格，拆的很细！这个提示词是通用模板，把主题替换成你想生成的内容，就可以扩展到汉服、凤冠、盔甲、器物等各种拆解图。"
-tags: []
+tags: ["汉服", "拆解图"]
 model: "GPT-image-2"
 sourceUrl: "https://x.com/MrLarus/status/2045504669401653414"
 media:
