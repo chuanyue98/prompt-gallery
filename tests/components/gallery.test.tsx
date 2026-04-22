@@ -55,7 +55,8 @@ describe('Gallery component helpers', () => {
 
   it('getGalleryMediaUrl handles branches', () => {
     expect(getGalleryMediaUrl(galleryItems[0], 'src')).toBe('/media/video-item/clip.mp4');
-    expect(getGalleryMediaUrl({ ...galleryItems[0], mediaUrl: 'http://a.com' }, 'src')).toBe('http://a.com');
+    // 当 media[0] 为空或字段缺失时，才应退而求其次取 mediaUrl
+    expect(getGalleryMediaUrl({ ...galleryItems[1], media: [], mediaUrl: 'http://a.com' }, 'src')).toBe('http://a.com');
   });
 });
 
