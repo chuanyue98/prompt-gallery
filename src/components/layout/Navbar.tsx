@@ -12,20 +12,28 @@ import {
 } from '@/lib/theme';
 
 export default function Navbar() {
+  const [mounted, setMounted] = useState(false);
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
-  const [theme, setTheme] = useState<ThemeId>(() => {
-    if (typeof window === 'undefined') {
-      return DEFAULT_THEME;
-    }
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
 
-    return readStoredTheme();
-  });
+  useEffect(() => {
+    // 延迟状态更新以避免 Hydration 冲突和 Lint 报错
+    const timer = setTimeout(() => {
+      setMounted(true);
+      const stored = readStoredTheme();
+      setTheme(stored);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    applyThemeToDocument(theme);
-  }, [theme]);
+    if (mounted) {
+      applyThemeToDocument(theme);
+    }
+  }, [theme, mounted]);
 
   useEffect(() => {
     if (!isThemeOpen) {
