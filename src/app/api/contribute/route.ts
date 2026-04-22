@@ -11,12 +11,6 @@ import { createAppAuth } from '@octokit/auth-app';
 // 5. REPO_NAME: 仓库名 (如 prompt-gallery)
 // ---------------------------------------------------------
 
-const APP_ID = process.env.APP_ID;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const INSTALLATION_ID = process.env.INSTALLATION_ID;
-const REPO_OWNER = process.env.REPO_OWNER || 'chuanyue98';
-const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
-
 type MediaType = 'video' | 'image';
 
 interface CreateContributionInput {

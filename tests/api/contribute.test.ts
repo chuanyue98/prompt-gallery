@@ -3,7 +3,6 @@ import { NextRequest } from 'next/server';
 import {
   buildContributionIndexMd,
   inferMediaTypeFromUrl,
-  normalizeTagList,
   validateCreateContributionInput,
   POST,
 } from '@/app/api/contribute/route';

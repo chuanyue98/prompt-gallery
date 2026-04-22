@@ -5,7 +5,6 @@ import ContributeModal from '@/components/gallery/ContributeModal';
 
 describe('ContributeModal validation and errors', () => {
   it('shows an alert when title is missing', async () => {
-    const user = userEvent.setup();
     const alertMock = vi.fn();
     vi.stubGlobal('alert', alertMock);
 

@@ -81,7 +81,7 @@ describe('theme utilities', () => {
 
     it('falls back to default in SSR environment', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error: Simulate non-browser environment
       delete global.window;
       expect(readStoredTheme()).toBe(DEFAULT_THEME);
       global.window = originalWindow;
@@ -104,7 +104,7 @@ describe('theme utilities', () => {
 
     it('does nothing in SSR environment', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error: Simulate non-browser environment
       delete global.window;
       expect(persistTheme('soft-ui')).toBeUndefined();
       global.window = originalWindow;

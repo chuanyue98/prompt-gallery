@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/app/page';
 import Gallery, { filterGalleryItems, getGalleryMediaUrl } from '@/components/gallery/Gallery';
 import ContributeModal, { readFileAsDataURL } from '@/components/gallery/ContributeModal';
-import { THEME_STORAGE_KEY, getThemeLabel } from '@/lib/theme';
 import type { GalleryItem } from '@/types/gallery';
 
 vi.mock('@/lib/utils', () => ({
@@ -41,7 +40,7 @@ describe('Gallery component helpers', () => {
   it('readFileAsDataURL rejects', async () => {
     const file = new File([''], 'e');
     const spy = vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function(this: FileReader) {
-      this.onerror?.({} as any);
+      this.onerror?.(new ProgressEvent('error') as unknown as ProgressEvent<FileReader>);
     });
     await expect(readFileAsDataURL(file)).rejects.toThrow();
     spy.mockRestore();
@@ -50,8 +49,9 @@ describe('Gallery component helpers', () => {
   it('filterGalleryItems covers all branches', () => {
     expect(filterGalleryItems(galleryItems, 'portrait', 'all')).toHaveLength(1);
     expect(filterGalleryItems(galleryItems, '', 'image')).toHaveLength(1);
-    expect(filterGalleryItems(galleryItems, '', 'invalid' as any)).toHaveLength(0);
+    expect(filterGalleryItems(galleryItems, '', 'invalid' as unknown as 'all')).toHaveLength(0);
   });
+
 
   it('getGalleryMediaUrl handles branches', () => {
     expect(getGalleryMediaUrl(galleryItems[0], 'src')).toBe('/media/video-item/clip.mp4');
