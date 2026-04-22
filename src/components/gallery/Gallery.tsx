@@ -334,7 +334,7 @@ export default function Gallery() {
                 <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.description || selectedItem.slug} fill unoptimized />
               )}
               <div className="absolute bottom-4 right-4 rounded-full bg-black/40 p-2 text-white/70 backdrop-blur-md sm:hidden">
-                🔍 点击全屏
+                🔍
               </div>
             </div>
             <div className="w-full md:w-2/5 flex flex-col p-6 sm:p-8 lg:p-10 overflow-hidden">
