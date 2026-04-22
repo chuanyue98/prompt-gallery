@@ -9,8 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "sync": "tsx scripts/sync.ts",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui --coverage"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
@@ -31,6 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "fs-extra": "^11.3.4",

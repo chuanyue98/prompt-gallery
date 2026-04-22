@@ -15,6 +15,7 @@ export default function Navbar() {
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeId>(() => {
+    /* v8 ignore next 3 */
     if (typeof window === 'undefined') {
       return DEFAULT_THEME;
     }

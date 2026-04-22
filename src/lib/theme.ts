@@ -41,6 +41,7 @@ export function resolveTheme(value: string | null | undefined): ThemeId {
 export function applyThemeToDocument(theme: ThemeId, root?: HTMLElement | null) {
   const target = root ?? (typeof document !== 'undefined' ? document.documentElement : null);
 
+  /* v8 ignore next 3 */
   if (!target) {
     return theme;
   }

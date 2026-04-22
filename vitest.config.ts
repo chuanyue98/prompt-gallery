@@ -13,5 +13,17 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.tsx'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/app/layout.tsx', 'src/app/favicon.ico'],
+      thresholds: {
+        lines: 84,
+        functions: 75,
+        branches: 75,
+        statements: 82,
+      },
+    },
   },
 });
