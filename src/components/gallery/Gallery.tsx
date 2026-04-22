@@ -333,7 +333,7 @@ export default function Gallery() {
               ) : (
                 <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.description || selectedItem.slug} fill unoptimized />
               )}
-              <div className="absolute bottom-4 right-4 rounded-full bg-black/40 p-2 text-white/70 backdrop-blur-md sm:hidden">
+              <div data-testid="mobile-fullscreen-hint" className="absolute bottom-4 right-4 rounded-full bg-black/40 p-2 text-white/70 backdrop-blur-md sm:hidden">
                 🔍
               </div>
             </div>

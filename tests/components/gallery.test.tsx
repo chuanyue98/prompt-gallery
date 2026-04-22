@@ -129,8 +129,8 @@ describe('Gallery component', () => {
     
     await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
     
-    // 点击图片区域进入全屏（现在仅包含图标）
-    const mediaTrigger = screen.getByText('🔍').parentElement!;
+    // 点击图片区域进入全屏（现在通过 testid 定位，避免与搜索框冲突）
+    const mediaTrigger = screen.getByTestId('mobile-fullscreen-hint');
     await user.click(mediaTrigger);
     
     expect(document.body.classList.contains('lightbox-active')).toBe(true);
