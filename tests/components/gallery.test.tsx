@@ -109,6 +109,39 @@ describe('Gallery component', () => {
     fireEvent.mouseEnter(video);
     fireEvent.mouseLeave(video);
   });
+
+  it('locks body scroll when detail modal is open', async () => {
+    const user = userEvent.setup();
+    render(<Gallery />);
+    
+    expect(document.body.style.overflow).toBe('');
+    
+    await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
+    expect(document.body.style.overflow).toBe('hidden');
+    
+    await user.click(screen.getByRole('button', { name: '关闭详情弹层' }));
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('opens and closes lightbox from detail modal', async () => {
+    const user = userEvent.setup();
+    render(<Gallery />);
+    
+    await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
+    
+    // 点击图片区域进入全屏（现在通过 testid 定位，避免与搜索框冲突）
+    const mediaTrigger = screen.getByTestId('mobile-fullscreen-hint');
+    await user.click(mediaTrigger);
+    
+    expect(document.body.classList.contains('lightbox-active')).toBe(true);
+    
+    // 点击关闭（Lightbox 的关闭按钮）
+    const closeBtns = screen.getAllByText('✕');
+    // Lightbox 通常是最后渲染的，所以取最后一个，或者通过 cursor-zoom-out 找容器
+    await user.click(closeBtns[closeBtns.length - 1]);
+    
+    expect(document.body.classList.contains('lightbox-active')).toBe(false);
+  });
 });
 
 describe('ContributeModal component', () => {

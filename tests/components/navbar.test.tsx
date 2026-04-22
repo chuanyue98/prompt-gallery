@@ -57,11 +57,28 @@ describe('Navbar component', () => {
     
     render(<Navbar />);
     
-    const logo = screen.getByText('Prompt Gallery');
+    // 使用正则匹配，因为文字被拆分到了嵌套 span 中
+    const logo = screen.getByText(/Prompt/i);
     await user.click(logo);
     
     expect(mockScroll).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     
     vi.unstubAllGlobals();
+  });
+
+  it('renders responsive classes for mobile adaptation', () => {
+    render(<Navbar />);
+    
+    // 检查投稿按钮的精简类
+    const contributeBtn = screen.getByRole('button', { name: /\+/ });
+    expect(contributeBtn.querySelector('.hidden.sm\\:inline')).toHaveTextContent('我要投稿');
+    
+    // 检查 Logo 文字的精简类
+    const logoText = screen.getByText('Prompt');
+    expect(logoText.querySelector('.hidden.xs\\:inline')).toHaveTextContent('Gallery');
+    
+    // 检查主题标签的精简类
+    const themeTrigger = screen.getByTestId('theme-trigger');
+    expect(themeTrigger.querySelector('.hidden.sm\\:block')).toHaveTextContent('THEME');
   });
 });

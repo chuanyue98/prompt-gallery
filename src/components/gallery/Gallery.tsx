@@ -63,6 +63,9 @@ export default function Gallery() {
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  
+  // 全屏预览状态
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -112,13 +115,20 @@ export default function Gallery() {
   useEffect(() => {
     if (selectedItem) {
       document.body.style.overflow = 'hidden';
+      if (isLightboxOpen) {
+        document.body.classList.add('lightbox-active');
+      } else {
+        document.body.classList.remove('lightbox-active');
+      }
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('lightbox-active');
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('lightbox-active');
     };
-  }, [selectedItem]);
+  }, [selectedItem, isLightboxOpen]);
   /* v8 ignore stop */
 
   const handleCopy = async (text: string, slug: string) => {
@@ -172,8 +182,24 @@ export default function Gallery() {
 
   const filteredItems = filterGalleryItems(items, search, category);
 
+  const Lightbox = ({ item, onClose }: { item: GalleryItem, onClose: () => void }) => (
+    <div 
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-200 cursor-zoom-out"
+      onClick={onClose}
+    >
+      <div className="relative w-full h-full flex items-center justify-center">
+        {item.media[0].type === 'video' ? (
+          <video src={getGalleryMediaUrl(item, 'src')} className="max-w-full max-h-full" controls autoPlay />
+        ) : (
+          <Image src={getGalleryMediaUrl(item, 'cover')} alt={item.description} className="object-contain" fill unoptimized />
+        )}
+      </div>
+      <button className="absolute top-6 right-6 text-white text-3xl opacity-50 hover:opacity-100">✕</button>
+    </div>
+  );
+
   return (
-    <div className="mx-auto max-w-[1800px]">
+    <div className="mx-auto max-w-[1800px] px-4 sm:px-6">
       <div className="mx-auto mb-10 max-w-3xl space-y-4">
         <div className="relative group">
           <input
@@ -201,11 +227,11 @@ export default function Gallery() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+      <div className="grid grid-cols-2 max-[350px]:grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
         {filteredItems.map(item => (
           <div key={item.slug} className="group relative">
-            <div className="absolute -inset-0.5 rounded-[2rem] opacity-0 blur-xl transition duration-500 group-hover:opacity-30" style={{ background: 'var(--surface-accent)' }} />
-            <div className="theme-card theme-card-hover relative flex h-full flex-col overflow-hidden rounded-[2rem] transition-all duration-500">
+            <div className="absolute -inset-0.5 rounded-[1.5rem] sm:rounded-[2rem] opacity-0 blur-xl transition duration-500 group-hover:opacity-30" style={{ background: 'var(--surface-accent)' }} />
+            <div className="theme-card theme-card-hover relative flex h-full flex-col overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] transition-all duration-500">
               <div
                 data-testid={`gallery-card-${item.slug}`}
                 className="relative aspect-[4/3] cursor-pointer overflow-hidden"
@@ -244,13 +270,13 @@ export default function Gallery() {
                     }}
                   />
                 )}
-                {item.media[0].type === 'video' && <div className="theme-panel absolute top-3 right-3 rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-tighter">Motion</div>}
+                {item.media[0].type === 'video' && <div className="theme-panel absolute top-2 right-2 sm:top-3 sm:right-3 rounded-lg px-1.5 py-0.5 sm:px-2 sm:py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-tighter">Motion</div>}
                 
                 {/* 模型标签：左上角 */}
                 {item.model && (
                   <div
                     data-testid={`model-badge-${item.slug}`}
-                    className="theme-model-badge absolute top-3 left-3 rounded-lg px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md"
+                    className="theme-model-badge absolute top-2 left-2 sm:top-3 sm:left-3 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-[7px] sm:text-[8px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] backdrop-blur-md"
                   >
                     {item.model}
                   </div>
@@ -260,16 +286,16 @@ export default function Gallery() {
                 <button 
                   aria-label={`${item.slug} quick copy`}
                   onClick={(e) => { e.stopPropagation(); handleCopy(item.content, item.slug); }}
-                  className={`absolute bottom-3 right-3 translate-y-2 rounded-xl px-3 py-1.5 text-[9px] font-bold opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 ${
+                  className={`absolute bottom-2 right-2 sm:bottom-3 sm:right-3 translate-y-2 rounded-lg sm:rounded-xl px-2 py-1 sm:px-3 sm:py-1.5 text-[7px] sm:text-[9px] font-bold opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 ${
                     copiedSlug === item.slug ? 'theme-success-surface' : 'theme-copy-button'
                   }`}
                 >
                   {copiedSlug === item.slug ? 'SUCCESS' : 'QUICK COPY'}
                 </button>
               </div>
-              <div className="p-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {item.tags.slice(0, 4).map(tag => <span key={tag} className="theme-tag rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.14em]">{tag}</span>)}
+              <div className="p-3 sm:p-4">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                  {item.tags.slice(0, 3).map(tag => <span key={tag} className="theme-tag rounded-full px-1.5 py-0.5 text-[7px] sm:text-[8px] font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em]">{tag}</span>)}
                 </div>
               </div>
             </div>
@@ -293,33 +319,39 @@ export default function Gallery() {
       )}
 
       {selectedItem && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-6 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }}>
-          <div className="theme-modal flex max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-[3rem] md:flex-row" onClick={e => e.stopPropagation()}>
-              <div className="relative flex w-full items-center justify-center border-r border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel-strong)_88%,black)] md:w-3/5">
+        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-6 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); setIsLightboxOpen(false); }}>
+          <div className="theme-modal flex h-[92vh] sm:h-auto max-h-[92vh] sm:max-h-[85vh] w-full max-w-6xl flex-col overflow-hidden rounded-t-[2rem] sm:rounded-[3rem] md:flex-row" onClick={e => e.stopPropagation()}>
+              <div 
+                className="relative flex w-full items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel-strong)_88%,black)] md:w-3/5 shrink-0 aspect-square sm:aspect-auto sm:min-h-[400px] max-h-[35vh] sm:max-h-none cursor-zoom-in"
+                onClick={() => setIsLightboxOpen(true)}
+              >
                 {selectedItem.media[0].type === 'video' ? (
-                  <video src={getGalleryMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop />
+                  <video src={getGalleryMediaUrl(selectedItem, 'src')} className="w-full h-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
               ) : isExternalUrl(getGalleryMediaUrl(selectedItem, 'cover')) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={getGalleryMediaUrl(selectedItem, 'cover')} className="w-full h-full object-contain" alt={selectedItem.description || selectedItem.slug} />
               ) : (
                 <Image src={getGalleryMediaUrl(selectedItem, 'cover')} className="object-contain" alt={selectedItem.description || selectedItem.slug} fill unoptimized />
               )}
+              <div data-testid="mobile-fullscreen-hint" className="absolute bottom-4 right-4 rounded-full bg-black/40 p-2 text-white/70 backdrop-blur-md sm:hidden">
+                🔍
+              </div>
             </div>
-            <div className="w-full md:w-2/5 flex flex-col p-8 lg:p-10 overflow-hidden">
+            <div className="w-full md:w-2/5 flex flex-col p-6 sm:p-8 lg:p-10 overflow-hidden">
               <div className="flex justify-between items-start gap-4 mb-6 shrink-0">
                 <div className="flex flex-wrap gap-2">
                   {selectedItem.model && (
-                    <span className="theme-model-badge rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em]">
+                    <span className="theme-model-badge rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]">
                       {selectedItem.model}
                     </span>
                   )}
                   {selectedItem.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="theme-tag rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em]">
+                    <span key={tag} className="theme-tag rounded-full px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.14em]">
                       {tag}
                     </span>
                   ))}
                 </div>
-                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full shrink-0">✕</button>
+                <button aria-label="关闭详情弹层" onClick={() => { setSelectedItem(null); setShowDeleteForm(false); }} className="theme-secondary-button flex h-11 w-11 items-center justify-center rounded-full shrink-0">✕</button>
               </div>
               
               <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
@@ -330,13 +362,13 @@ export default function Gallery() {
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">提示词 (Prompt)</h4>
-                    <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`rounded px-2.5 py-1 text-[9px] font-black uppercase transition-all ${copiedSlug === 'modal' ? 'theme-success-surface' : 'theme-copy-button'}`}>
+                    <button aria-label="复制详情提示词" onClick={() => handleCopy(selectedItem.content, 'modal')} className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase transition-all ${copiedSlug === 'modal' ? 'theme-success-surface' : 'theme-copy-button'}`}>
                       {copiedSlug === 'modal' ? 'Copied ✓' : 'Copy Prompt'}
                     </button>
                   </div>
                   <div className="relative group/code">
                     <div className="absolute -inset-1 rounded-2xl opacity-15 blur" style={{ background: 'var(--surface-accent)' }} />
-                    <div className="theme-panel-strong relative max-h-[400px] overflow-y-auto rounded-2xl p-6 text-sm font-mono whitespace-pre-wrap leading-loose text-[var(--text-primary)] custom-scrollbar">
+                    <div className="theme-panel-strong relative max-h-[300px] sm:max-h-[400px] overflow-y-auto rounded-2xl p-5 sm:p-6 text-sm font-mono whitespace-pre-wrap leading-loose text-[var(--text-primary)] custom-scrollbar">
                       {selectedItem.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim()}
                     </div>
                   </div>
@@ -348,7 +380,7 @@ export default function Gallery() {
                       href={selectedItem.sourceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="theme-secondary-button inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold w-full md:w-auto"
+                      className="theme-secondary-button inline-flex h-12 items-center justify-center rounded-2xl px-6 py-3 text-sm font-bold w-full md:w-auto"
                     >
                       查看来源 (VIEW SOURCE)
                     </a>
@@ -358,7 +390,7 @@ export default function Gallery() {
                 {/* 申请下架入口 */}
                 <div className="mt-4 border-t border-[var(--border-soft)] pt-6 pb-2">
                   {deleteSuccess ? (
-                    <div className="theme-success-surface flex items-center justify-center rounded-2xl py-4 animate-in zoom-in-95 duration-500">
+                    <div className="theme-success-surface flex items-center justify-center rounded-2xl py-6 animate-in zoom-in-95 duration-500">
                       <div className="text-center">
                         <span className="mb-1 block text-sm font-black uppercase tracking-widest">✅ 申请已提交</span>
                         <p className="text-[10px] opacity-80">GitHub PR 已创建，请等待管理员审核</p>
@@ -368,7 +400,7 @@ export default function Gallery() {
                     <div className="text-right">
                       <button
                         onClick={() => setShowDeleteForm(true)}
-                        className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--danger-text)]"
+                        className="cursor-pointer min-h-[44px] text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--danger-text)]"
                       >
                         申请下架 (TAKE DOWN)
                       </button>
@@ -382,19 +414,19 @@ export default function Gallery() {
                           value={deleteReason}
                           onChange={(e) => setDeleteReason(e.target.value)}
                           placeholder="例如：图片失效、侵权..."
-                          className="theme-input w-full rounded-xl px-4 py-2.5 text-xs"
+                          className="theme-input w-full rounded-xl px-4 py-3 text-xs"
                         />
                         <div className="flex gap-2">
                           <button
                             disabled={isDeleting || !deleteReason.trim()}
                             onClick={() => handleDeleteRequest(selectedItem)}
-                            className="theme-danger-button flex-grow rounded-xl px-4 py-2 text-[10px] font-black uppercase disabled:opacity-50"
+                            className="theme-danger-button flex-grow h-11 rounded-xl px-4 py-2 text-[10px] font-black uppercase disabled:opacity-50"
                           >
                             {isDeleting ? '提交中' : '确认申请'}
                           </button>
                           <button
                             onClick={() => { setShowDeleteForm(false); setDeleteReason(''); }}
-                            className="theme-secondary-button rounded-xl px-4 py-2 text-[10px] font-black uppercase"
+                            className="theme-secondary-button h-11 rounded-xl px-4 py-2 text-[10px] font-black uppercase"
                           >
                             取消
                           </button>
@@ -407,6 +439,9 @@ export default function Gallery() {
             </div>
           </div>
         </div>
+      )}
+      {selectedItem && isLightboxOpen && (
+        <Lightbox item={selectedItem} onClose={() => setIsLightboxOpen(false)} />
       )}
     </div>
   );
