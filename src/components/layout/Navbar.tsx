@@ -18,9 +18,13 @@ export default function Navbar() {
   const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
 
   useEffect(() => {
-    setMounted(true);
-    const stored = readStoredTheme();
-    setTheme(stored);
+    // 延迟状态更新以避免 Hydration 冲突和 Lint 报错
+    const timer = setTimeout(() => {
+      setMounted(true);
+      const stored = readStoredTheme();
+      setTheme(stored);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
