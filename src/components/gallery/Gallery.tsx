@@ -26,7 +26,11 @@ export function filterGalleryItems(items: GalleryItem[], search: string, categor
 }
 
 export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover') {
-  const asset = item.media[0][field];
+  const asset = item.media?.[0]?.[field] || item.mediaUrl;
+
+  if (!asset) {
+    return '';
+  }
 
   if (isExternalUrl(asset)) {
     return asset;
