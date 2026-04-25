@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/app/page';
 import Gallery from '@/components/gallery/Gallery';
+import ContributeModal from '@/components/gallery/ContributeModal';
 import { filterGalleryItems, getGalleryMediaUrl, readFileAsDataURL, isExternalUrl, isVideoAsset, safelyPlayVideo } from '@/lib/gallery';
 import type { GalleryItem } from '@/types/gallery';
 
@@ -135,5 +136,44 @@ describe('Gallery component', () => {
     await user.hover(card);
     // Unhover triggers pause
     await user.unhover(card);
+  });
+
+  it('handles drag and drop in ContributeModal', async () => {
+    // 模拟 URL.createObjectURL
+    const mockObjectUrl = 'blob:test';
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue(mockObjectUrl);
+    
+    render(<ContributeModal isOpen={true} onClose={() => {}} />);
+
+    const dropZone = screen.getByText(/点击或拖拽上传/).closest('label')!;
+    const file = new File(['dummy content'], 'test.png', { type: 'image/png' });
+
+    // 1. 测试 DragOver
+    fireEvent.dragOver(dropZone, {
+      dataTransfer: {
+        files: [file],
+        types: ['Files']
+      }
+    });
+    expect(screen.getByText('松开即刻上传')).toBeInTheDocument();
+
+    // 2. 测试 DragLeave
+    fireEvent.dragLeave(dropZone);
+    expect(screen.getByText('点击或拖拽上传')).toBeInTheDocument();
+
+    // 3. 测试 Drop
+    fireEvent.drop(dropZone, {
+      dataTransfer: {
+        files: [file],
+      }
+    });
+
+    // 验证预览图是否出现
+    await waitFor(() => {
+      expect(screen.getByAltText('Preview')).toBeInTheDocument();
+      expect(screen.getByAltText('Preview')).toHaveAttribute('src', mockObjectUrl);
+    });
+
+    createObjectURLSpy.mockRestore();
   });
 });
