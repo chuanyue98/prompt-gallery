@@ -148,8 +148,8 @@ describe('Gallery component', () => {
     const dropZone = screen.getByText(/点击或拖拽上传/).closest('label')!;
     const file = new File(['dummy content'], 'test.png', { type: 'image/png' });
 
-    // 1. 测试 DragOver
-    fireEvent.dragOver(dropZone, {
+    // 1. 测试 DragEnter
+    fireEvent.dragEnter(dropZone, {
       dataTransfer: {
         files: [file],
         types: ['Files']
