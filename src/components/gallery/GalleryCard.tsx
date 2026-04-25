@@ -34,10 +34,15 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
           aria-label={`打开作品详情: ${item.slug}`}
           onClick={() => onSelect(item)}
           onKeyDown={(event) => {
-            /* v8 ignore next 4 */
-            if (event.key === 'Enter' || event.key === ' ') {
+            if (event.key === 'Enter') {
               event.preventDefault();
               onSelect(item);
+              return;
+            }
+            if (event.key === ' ') {
+              event.preventDefault();
+              onSelect(item);
+              return;
             }
           }}
         >

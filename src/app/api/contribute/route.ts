@@ -24,7 +24,7 @@ interface ValidationResult {
   mediaType: MediaType | null;
 }
 
-function buildContributionSlug(input: {
+export function buildContributionSlug(input: {
   title: string;
 }) {
   const cleanTitle = input.title
@@ -33,15 +33,14 @@ function buildContributionSlug(input: {
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  /* v8 ignore next 3 */
   let base = 'contribution';
-  if (cleanTitle) {
+  if (cleanTitle.length > 0) {
     base = cleanTitle;
   }
   const randomSuffix = Math.random().toString(36).substring(2, 7);
 
   return `${base}-${randomSuffix}`;
-  }
+}
 
 
 function inferMediaTypeFromFile(file: File): MediaType {
@@ -135,9 +134,13 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
   const model = (formData.get('model') as string) || '';
   const uploadedFile = formData.get('file');
   const file = (uploadedFile && typeof uploadedFile === 'object' && 'size' in uploadedFile && (uploadedFile as { size: number }).size > 0) ? (uploadedFile as unknown as File) : null;
-  /* v8 ignore next 4 */
   const mediaUrlVal = formData.get('mediaUrl');
-  const mediaUrl = (typeof mediaUrlVal === 'string' && mediaUrlVal.trim().length > 0) ? mediaUrlVal.trim() : '';
+  let mediaUrl = '';
+  if (typeof mediaUrlVal === 'string') {
+    if (mediaUrlVal.trim().length > 0) {
+      mediaUrl = mediaUrlVal.trim();
+    }
+  }
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
   
   const validation = validateCreateContributionInput({ title, prompt, mediaUrl, file });
@@ -148,10 +151,20 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
 
   const slug = buildContributionSlug({ title });
   const mediaType = validation.mediaType;
-  /* v8 ignore next 1 */
-  const fileName = file?.name || mediaUrl;
-  const fileBuffer = file ? await file.arrayBuffer() : null;
-  const fileBase64 = fileBuffer ? Buffer.from(fileBuffer).toString('base64') : null;
+  
+  let fileName = mediaUrl;
+  let fileBase64: string | null = null;
+  if (file) {
+    fileName = file.name;
+    const fileBuffer = await file.arrayBuffer();
+    fileBase64 = Buffer.from(fileBuffer).toString('base64');
+  }
+
+  let assetReference = mediaUrl;
+  if (file) {
+    assetReference = fileName;
+  }
+
   const indexMd = buildContributionIndexMd({
     title,
     description,
@@ -161,8 +174,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     mediaUrl,
     sourceUrl,
     mediaType,
-    /* v8 ignore next 1 */
-    assetReference: file ? fileName : mediaUrl,
+    assetReference,
   });
 
   const pr = await createContributionPullRequest(octokit, config, {

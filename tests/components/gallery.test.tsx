@@ -219,14 +219,13 @@ describe('Gallery component', () => {
   });
 
   it('triggers hover logic in GalleryCard', async () => {
-    const user = userEvent.setup();
     render(<Gallery />);
     const card = await screen.findByTestId('gallery-card-video-item');
     
     // Hover triggers play
-    await user.hover(card);
+    fireEvent.mouseEnter(card);
     // Unhover triggers pause
-    await user.unhover(card);
+    fireEvent.mouseLeave(card);
   });
 
   it('handles drag and drop in ContributeModal', async () => {
@@ -290,6 +289,7 @@ describe('GalleryCard direct tests', () => {
   });
 
   it('selects item on Enter keydown', () => {
+    const user = userEvent.setup();
     render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: 'Enter' });
@@ -303,7 +303,7 @@ describe('GalleryCard direct tests', () => {
     expect(onSelect).toHaveBeenCalledWith(galleryItems[0]);
   });
 
-  it('ignores unrelated key presses', () => {
+  it('ignores other key presses', () => {
     render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: 'Tab' });

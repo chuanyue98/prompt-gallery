@@ -76,10 +76,9 @@ export default function Gallery() {
   useEffect(() => {
     if (selectedItem) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.remove('lightbox-active');
       if (isLightboxOpen) {
         document.body.classList.add('lightbox-active');
-      } else {
-        document.body.classList.remove('lightbox-active');
       }
     } else {
       document.body.style.overflow = '';
@@ -91,7 +90,6 @@ export default function Gallery() {
     };
   }, [selectedItem, isLightboxOpen]);
 
-  /* v8 ignore next 7 */
   const handleCopy = useCallback(async (text: string, slug: string) => {
     if (await copyToClipboard(text)) {
       setCopiedSlug(slug);

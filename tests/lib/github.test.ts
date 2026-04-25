@@ -150,9 +150,15 @@ describe('lib/github', () => {
 
     it('handles unexpected errors in createContributionPullRequest', async () => {
       mockOctokit.rest.git.getRef.mockRejectedValue('String Error');
-      // @ts-expect-error
+      // @ts-expect-error - testing invalid input types for error handling coverage
       await expect(createContributionPullRequest(mockOctokit, { REPO_OWNER: 'o', REPO_NAME: 'r' }, { mediaType: 'image' }))
         .rejects.toBe('String Error');
+    });
+
+    it('covers requestDeletionPullRequest branch coverage for error message', async () => {
+       mockOctokit.rest.git.getRef.mockRejectedValue(new Error('Actual Error'));
+       // @ts-expect-error - testing invalid config for coverage
+       await expect(requestDeletionPullRequest(mockOctokit, {}, {})).rejects.toThrow('Actual Error');
     });
   });
 
