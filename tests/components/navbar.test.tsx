@@ -66,6 +66,24 @@ describe('Navbar component', () => {
     vi.unstubAllGlobals();
   });
 
+  it('opens and closes contribute modal when button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<Navbar />);
+
+    const btn = screen.getByRole('button', { name: /\+/ });
+    await user.click(btn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('contribute-modal-shell')).toBeInTheDocument();
+    });
+
+    // Close the modal to trigger onClose branch in Navbar
+    await user.click(screen.getByRole('button', { name: '关闭投稿弹层' }));
+    await waitFor(() => {
+      expect(screen.queryByTestId('contribute-modal-shell')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders responsive classes for mobile adaptation', () => {
     render(<Navbar />);
     

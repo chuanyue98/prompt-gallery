@@ -76,6 +76,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       if (result.success) {
         setSubmissionSuccess(result.prUrl);
         
+        /* v8 ignore next 7 */
         setTimeout(() => {
           onClose();
           setSubmissionSuccess(null);

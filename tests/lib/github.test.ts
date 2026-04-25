@@ -60,12 +60,41 @@ describe('lib/github', () => {
     it('handles various URLs', () => {
       expect(inferMediaTypeFromUrl('test.mp4')).toBe('video');
       expect(inferMediaTypeFromUrl('test.png')).toBe('image');
+      expect(inferMediaTypeFromUrl('test.unknown')).toBeNull(); // This covers line 18
       expect(inferMediaTypeFromUrl(null)).toBeNull();
       expect(inferMediaTypeFromUrl('')).toBeNull();
     });
   });
 
   describe('createContributionPullRequest', () => {
+    it('creates a PR for video type with empty optional fields', async () => {
+      mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
+      mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
+      mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'pr-url' } });
+
+      // @ts-expect-error - mockOctokit is not a full Octokit instance
+      const result = await createContributionPullRequest(mockOctokit,
+        { REPO_OWNER: 'owner', REPO_NAME: 'repo' },
+        {
+          slug: 'video-slug',
+          title: 'Video',
+          description: '',
+          model: '',
+          mediaUrl: '',
+          sourceUrl: '',
+          mediaType: 'video',
+          indexMd: 'content',
+          fileName: 'clip.mp4',
+          fileBase64: 'base64data',
+        }
+      );
+
+      expect(result.html_url).toBe('pr-url');
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining('videos/') })
+      );
+    });
+
     it('successfully creates a PR with index.md and media file', async () => {
       mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
       mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
@@ -118,6 +147,13 @@ describe('lib/github', () => {
       expect(result.html_url).toBe('pr-url');
       expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
     });
+
+    it('handles unexpected errors in createContributionPullRequest', async () => {
+      mockOctokit.rest.git.getRef.mockRejectedValue('String Error');
+      // @ts-expect-error
+      await expect(createContributionPullRequest(mockOctokit, { REPO_OWNER: 'o', REPO_NAME: 'r' }, { mediaType: 'image' }))
+        .rejects.toBe('String Error');
+    });
   });
 
   describe('requestDeletionPullRequest', () => {
@@ -131,6 +167,28 @@ describe('lib/github', () => {
         { REPO_OWNER: 'owner', REPO_NAME: 'repo' },
         { slug: 'non-existent', type: 'image', reason: 'cleanup' }
       )).rejects.toThrow('Target directory not found or already empty');
+    });
+
+    it('creates deletion PR with empty reason (no suffix)', async () => {
+      mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
+      mockOctokit.rest.git.getCommit.mockResolvedValue({ data: { tree: { sha: 'tree-sha' } } });
+      mockOctokit.rest.git.getTree.mockResolvedValue({ data: { tree: [
+        { path: 'public/data/images/slug/index.md', type: 'blob', mode: '100644' }
+      ] } });
+      mockOctokit.rest.git.createTree.mockResolvedValue({ data: { sha: 'new-tree-sha' } });
+      mockOctokit.rest.git.createCommit.mockResolvedValue({ data: { sha: 'new-commit-sha' } });
+      mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'del-pr-url' } });
+
+      // @ts-expect-error - mockOctokit is not a full Octokit instance
+      const result = await requestDeletionPullRequest(mockOctokit,
+        { REPO_OWNER: 'owner', REPO_NAME: 'repo' },
+        { slug: 'slug', type: 'image', reason: '' }
+      );
+
+      expect(result.html_url).toBe('del-pr-url');
+      expect(mockOctokit.rest.git.createCommit).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Delete prompt: slug' })
+      );
     });
 
     it('successfully creates a deletion PR', async () => {

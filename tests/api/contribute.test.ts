@@ -70,6 +70,37 @@ describe('POST handler branching', () => {
     expect(res.status).toBe(404);
   });
 
+  it('returns 400 when neither file nor URL in delete is missing slug', async () => {
+    const req = new NextRequest('http://localhost/api/contribute?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ type: 'image' }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 200 on successful delete action', async () => {
+    (requestDeletionPullRequest as Mock).mockResolvedValue({ html_url: 'del-pr-url' });
+    const req = new NextRequest('http://localhost/api/contribute?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ slug: 'my-slug', type: 'image', reason: 'broken' }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true, prUrl: 'del-pr-url' });
+  });
+
+  it('propagates unexpected delete errors as 500', async () => {
+    (requestDeletionPullRequest as Mock).mockRejectedValue(new Error('DB failure'));
+    const req = new NextRequest('http://localhost/api/contribute?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ slug: 'my-slug', type: 'image' }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'DB failure' });
+  });
+
   it('handles Robot Contribution Error catch block', async () => {
     (getOctokit as Mock).mockImplementation(() => { throw 'String Error'; });
     const req = new NextRequest('http://localhost/api/contribute?action=delete', {
@@ -95,6 +126,122 @@ describe('POST handler branching', () => {
     expect(res.status).toBe(200);
     expect(createContributionPullRequest).toHaveBeenCalled();
   });
+
+  it('successfully creates PR with mediaUrl and covers buildContributionSlug logic', async () => {
+    const formData = new FormData();
+    // Test slug building with special characters and multiple dashes
+    formData.append('title', '  Hello / World \\ : ? * " < > |  ');
+    formData.append('prompt', 'Prompt');
+    formData.append('mediaUrl', 'https://example.com/image.png');
+    
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const result = await res.json();
+    expect(result.prUrl).toBe('pr-url');
+    
+    // Verify slug processing: characters replaced by dash, multiple dashes collapsed, trimmed.
+    // "Hello / World" -> "Hello---World" -> "Hello-World"
+    const callArgs = (createContributionPullRequest as Mock).mock.calls[0][2];
+    expect(callArgs.slug).toMatch(/^Hello-World-[a-z0-9]{5}$/);
+  });
+
+  it('covers empty title case in buildContributionSlug', async () => {
+    const formData = new FormData();
+    formData.append('title', ' /?* '); // Trims and replaces to empty
+    formData.append('prompt', 'Prompt');
+    formData.append('mediaUrl', 'https://example.com/image.png');
+    
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const res = await POST(req);
+    // In this case, title.trim() is "/?*", so validation passes.
+    // buildContributionSlug will produce "contribution-<random>"
+    expect(res.status).toBe(200);
+    const callArgs = (createContributionPullRequest as Mock).mock.calls[0][2];
+    expect(callArgs.slug).toMatch(/^contribution-[a-z0-9]{5}$/);
+  });
+
+  it('covers handleCreate with empty string mediaUrl', async () => {
+    const formData = new FormData();
+    formData.append('title', 'Title');
+    formData.append('prompt', 'Prompt');
+    formData.append('mediaUrl', '   '); // Trims to empty
+    const file = new File(['data'], 'test.png', { type: 'image/png' });
+    formData.append('file', file);
+
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+  });
+
+  it('covers handleCreate with non-string mediaUrl', async () => {
+    const formData = new FormData();
+    formData.append('title', 'Title');
+    formData.append('prompt', 'Prompt');
+    // Appending a File instead of string to mediaUrl field
+    const blob = new Blob(['data'], { type: 'text/plain' });
+    formData.append('mediaUrl', blob, 'not-a-string.txt');
+    const file = new File(['data'], 'test.png', { type: 'image/png' });
+    formData.append('file', file);
+
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+  });
+
+  it('covers handleCreate with no file (assetReference branch)', async () => {
+    const formData = new FormData();
+    formData.append('title', 'Title');
+    formData.append('prompt', 'Prompt');
+    formData.append('mediaUrl', 'https://example.com/a.png');
+    
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const callArgs = (createContributionPullRequest as Mock).mock.calls[0][2];
+    expect(callArgs.fileBase64).toBeNull();
+  });
+
+  it('covers explicit create action in POST handler', async () => {
+    const formData = new FormData();
+    formData.append('title', 'Title');
+    formData.append('prompt', 'Prompt');
+    formData.append('mediaUrl', 'https://example.com/a.png');
+    
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+
+    const req = new NextRequest('http://localhost/api/contribute?action=create', { method: 'POST', body: formData });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 400 when type is missing in delete action', async () => {
+    const req = new NextRequest('http://localhost/api/contribute?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ slug: 'my-slug' }), // Missing type
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'Missing slug or type' });
+  });
+
+  it('handles non-Error objects in catch block', async () => {
+    // Force an error that is not an instance of Error
+    (getOctokit as Mock).mockImplementation(() => {
+      throw 'string error';
+    });
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST' });
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'Robot processing failed' });
+  });
 });
 
 describe('Utility unit tests', () => {
@@ -105,6 +252,16 @@ describe('Utility unit tests', () => {
     expect(inferMediaTypeFromUrl('a.webp')).toBe('image');
     expect(inferMediaTypeFromUrl('a.gif')).toBe('image');
     expect(inferMediaTypeFromUrl('a.txt')).toBeNull();
+  });
+
+  it('rejects when neither file nor URL provided', () => {
+    const result = validateCreateContributionInput({
+      title: 'T',
+      prompt: 'P',
+      mediaUrl: '',
+      file: null,
+    });
+    expect(result.error).toContain('Provide either');
   });
 
   it('validateCreateContributionInput rejects when mediaType inference fails', () => {

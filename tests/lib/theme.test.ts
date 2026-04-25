@@ -41,6 +41,7 @@ describe('theme utilities', () => {
       expect(isThemeId('invalid')).toBe(false);
       expect(isThemeId(null)).toBe(false);
       expect(isThemeId(undefined)).toBe(false);
+      expect(isThemeId('')).toBe(false);
     });
   });
 
@@ -67,8 +68,14 @@ describe('theme utilities', () => {
     });
 
     it('returns theme and does nothing if target is missing', () => {
-      // 模拟 target 为空的分支
       expect(applyThemeToDocument('soft-ui', null)).toBe('soft-ui');
+    });
+
+    it('applies theme to a custom root element', () => {
+      const div = document.createElement('div');
+      applyThemeToDocument('cyber-obsidian', div);
+      expect(div.dataset.theme).toBe('cyber-obsidian');
+      expect(div.style.colorScheme).toBe('dark');
     });
   });
 
