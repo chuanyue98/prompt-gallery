@@ -1,63 +1,47 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, Mock } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   buildContributionIndexMd,
-  inferMediaTypeFromUrl,
   validateCreateContributionInput,
   POST,
 } from '@/app/api/contribute/route';
 
-const mockOctokit = {
-  rest: {
-    git: {
-      getRef: vi.fn(),
-      getCommit: vi.fn(),
-      getTree: vi.fn(),
-      createTree: vi.fn(),
-      createCommit: vi.fn(),
-      createRef: vi.fn(),
-    },
-    repos: {
-      createOrUpdateFileContents: vi.fn(),
-    },
-    pulls: {
-      create: vi.fn(),
-    },
-  },
-};
+// Mock GitHub lib but keep original inferMediaTypeFromUrl for its own test
+vi.mock('@/lib/github', async (importOriginal) => {
+  const actual = await importOriginal() as typeof import('@/lib/github');
+  return {
+    ...actual,
+    getOctokit: vi.fn(),
+    createContributionPullRequest: vi.fn(),
+    requestDeletionPullRequest: vi.fn(),
+    // Explicitly keep the real inferMediaTypeFromUrl unless specifically mocked
+    inferMediaTypeFromUrl: actual.inferMediaTypeFromUrl,
+  };
+});
 
-vi.mock('octokit', () => ({
-  Octokit: class {
-    rest = mockOctokit.rest;
-    constructor() {}
-  },
-}));
-
-vi.mock('@octokit/auth-app', () => ({
-  createAppAuth: vi.fn(),
-}));
+import { 
+  getOctokit, 
+  createContributionPullRequest, 
+  requestDeletionPullRequest,
+  inferMediaTypeFromUrl,
+  MediaType
+} from '@/lib/github';
 
 describe('POST handler branching', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.APP_ID = '123';
-    process.env.PRIVATE_KEY = 'key';
-    process.env.INSTALLATION_ID = '456';
+    process.env.REPO_OWNER = 'test-owner';
+    process.env.REPO_NAME = 'test-repo';
     
-    // Default success mocks
-    mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
-    mockOctokit.rest.git.getCommit.mockResolvedValue({ data: { tree: { sha: 'tree-sha' } } });
-    mockOctokit.rest.git.getTree.mockResolvedValue({ data: { tree: [{ path: 'public/data/videos/test-slug/index.md', type: 'blob', mode: '100644' }] } });
-    mockOctokit.rest.git.createTree.mockResolvedValue({ data: { sha: 'new-tree-sha' } });
-    mockOctokit.rest.git.createCommit.mockResolvedValue({ data: { sha: 'new-commit-sha' } });
-    mockOctokit.rest.git.createRef.mockResolvedValue({});
-    mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
-    mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'pr-url' } });
+    (getOctokit as Mock).mockReturnValue({
+      // Dummy octokit object
+    });
   });
 
-  it('returns 500 when credentials are missing', async () => {
-    delete process.env.APP_ID;
-    // 显式提供 content-type 和 body 避免 undici 预解析错误
+  it('returns 500 when getOctokit throws', async () => {
+    (getOctokit as Mock).mockImplementation(() => {
+      throw new Error('GitHub App credentials not configured');
+    });
     const req = new NextRequest('http://localhost/api/contribute', { 
       method: 'POST', 
       headers: { 'content-type': 'application/json' },
@@ -77,7 +61,7 @@ describe('POST handler branching', () => {
   });
 
   it('returns 404 when deleting a non-existent directory', async () => {
-    mockOctokit.rest.git.getTree.mockResolvedValue({ data: { tree: [] } });
+    (requestDeletionPullRequest as Mock).mockRejectedValue(new Error('Target directory not found or already empty'));
     const req = new NextRequest('http://localhost/api/contribute?action=delete', {
       method: 'POST',
       body: JSON.stringify({ slug: 'none', type: 'video' }),
@@ -87,28 +71,29 @@ describe('POST handler branching', () => {
   });
 
   it('handles Robot Contribution Error catch block', async () => {
-    mockOctokit.rest.git.getRef.mockImplementation(() => { throw 'String Error'; });
+    (getOctokit as Mock).mockImplementation(() => { throw 'String Error'; });
     const req = new NextRequest('http://localhost/api/contribute?action=delete', {
       method: 'POST',
       body: JSON.stringify({ slug: 'any', type: 'video' }),
     });
     const res = await POST(req);
     expect(res.status).toBe(500);
-    expect(await res.json()).toEqual({ error: 'String Error' });
+    expect(await res.json()).toEqual({ error: 'Robot processing failed' });
   });
 
   it('successfully creates PR with local file upload', async () => {
     const formData = new FormData();
     formData.append('title', 'File Post');
     formData.append('prompt', 'Prompt');
-    // 确保文件大小 > 0
     const file = new File(['some data content'], 'test.png', { type: 'image/png' });
     formData.append('file', file);
     
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'pr-url' });
+
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(2);
+    expect(createContributionPullRequest).toHaveBeenCalled();
   });
 });
 
@@ -143,7 +128,7 @@ describe('buildContributionIndexMd escaping', () => {
       model: 'M "m"',
       mediaUrl: 'U',
       sourceUrl: 'S',
-      mediaType: 'image',
+      mediaType: 'image' as MediaType,
       assetReference: 'R',
     });
     expect(md).toContain('title: "A \\"Title\\""');

@@ -10,7 +10,7 @@
 ## 技术上下文
 
 **语言/版本**: TypeScript, React 19, Next.js 16.2.4  
-**主要依赖**: TailwindCSS v4.0, Framer Motion  
+**主要依赖**: TailwindCSS v4.0  
 **存储**: 静态文件系统 (JSON/Markdown)  
 **测试**: Vitest, React Testing Library  
 **目标平台**: 移动端浏览器 (iOS/Android Safari, Chrome), 平板及桌面端

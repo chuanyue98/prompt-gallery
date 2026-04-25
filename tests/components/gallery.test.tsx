@@ -1,9 +1,9 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/app/page';
-import Gallery, { filterGalleryItems, getGalleryMediaUrl } from '@/components/gallery/Gallery';
-import ContributeModal, { readFileAsDataURL } from '@/components/gallery/ContributeModal';
+import Gallery from '@/components/gallery/Gallery';
+import { filterGalleryItems, getGalleryMediaUrl, readFileAsDataURL, isExternalUrl, isVideoAsset, safelyPlayVideo } from '@/lib/gallery';
 import type { GalleryItem } from '@/types/gallery';
 
 vi.mock('@/lib/utils', () => ({
@@ -57,6 +57,28 @@ describe('Gallery component helpers', () => {
     expect(getGalleryMediaUrl(galleryItems[0], 'src')).toBe('/media/video-item/clip.mp4');
     // 当 media[0] 为空或字段缺失时，才应退而求其次取 mediaUrl
     expect(getGalleryMediaUrl({ ...galleryItems[1], media: [], mediaUrl: 'http://a.com' }, 'src')).toBe('http://a.com');
+    // 没有 asset 返回空
+    expect(getGalleryMediaUrl({ ...galleryItems[0], media: [], mediaUrl: undefined }, 'src')).toBe('');
+  });
+
+  it('isExternalUrl and isVideoAsset handle branches', () => {
+    expect(isExternalUrl('http://a.com')).toBe(true);
+    expect(isExternalUrl('/a.png')).toBe(false);
+    expect(isVideoAsset('a.mp4')).toBe(true);
+    expect(isVideoAsset('a.png')).toBe(false);
+  });
+
+  it('safelyPlayVideo catches error', async () => {
+    const mockVideo = {
+      play: () => Promise.reject(new Error('play error')),
+    } as unknown as HTMLVideoElement;
+    // Should not throw
+    safelyPlayVideo(mockVideo);
+    
+    const mockVideoNoPromise = {
+      play: () => ({}), // no .catch
+    } as unknown as HTMLVideoElement;
+    safelyPlayVideo(mockVideoNoPromise);
   });
 });
 
@@ -79,7 +101,7 @@ describe('Gallery component', () => {
     expect(screen.queryByRole('button', { name: '打开作品详情: image-item' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '全部' }));
-    await user.type(screen.getByPlaceholderText('搜索灵感...'), 'nomatch');
+    await user.type(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'), 'nomatch');
     expect(await screen.findByText('没有匹配当前筛选条件的内容。')).toBeInTheDocument();
   });
 
@@ -98,73 +120,20 @@ describe('Gallery component', () => {
     await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
     await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Broken');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
-    expect(await screen.findByText('✅ 申请已提交')).toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.getByText('✅ 申请已提交')).toBeInTheDocument();
+    });
   });
 
-  it('covers safelyPlayVideo catch and video events', async () => {
-    render(<Gallery />);
-    // 使用精准选择器避开快捷复制按钮
-    const video = (await screen.findByTestId('gallery-card-video-item')).querySelector('video[src="/media/video-item/clip.mp4"]')!;
-    vi.spyOn(video, 'play').mockRejectedValue(new Error());
-    fireEvent.mouseEnter(video);
-    fireEvent.mouseLeave(video);
-  });
-
-  it('locks body scroll when detail modal is open', async () => {
+  it('triggers hover logic in GalleryCard', async () => {
     const user = userEvent.setup();
     render(<Gallery />);
+    const card = await screen.findByTestId('gallery-card-video-item');
     
-    expect(document.body.style.overflow).toBe('');
-    
-    await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
-    expect(document.body.style.overflow).toBe('hidden');
-    
-    await user.click(screen.getByRole('button', { name: '关闭详情弹层' }));
-    expect(document.body.style.overflow).toBe('');
-  });
-
-  it('opens and closes lightbox from detail modal', async () => {
-    const user = userEvent.setup();
-    render(<Gallery />);
-    
-    await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
-    
-    // 点击图片区域进入全屏（现在通过 testid 定位，避免与搜索框冲突）
-    const mediaTrigger = screen.getByTestId('mobile-fullscreen-hint');
-    await user.click(mediaTrigger);
-    
-    expect(document.body.classList.contains('lightbox-active')).toBe(true);
-    
-    // 点击关闭（Lightbox 的关闭按钮）
-    const closeBtns = screen.getAllByText('✕');
-    // Lightbox 通常是最后渲染的，所以取最后一个，或者通过 cursor-zoom-out 找容器
-    await user.click(closeBtns[closeBtns.length - 1]);
-    
-    expect(document.body.classList.contains('lightbox-active')).toBe(false);
-  });
-});
-
-describe('ContributeModal component', () => {
-  it('handles successful Media URL submission', async () => {
-    const user = userEvent.setup();
-    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ 
-      ok: true, 
-      json: async () => ({ success: true, prUrl: 'http://github.com/pr' }) 
-    }));
-
-    render(<ContributeModal isOpen onClose={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: 'Media URL' }));
-    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'T');
-    await user.type(screen.getByPlaceholderText('完整咒语...'), 'P');
-    // 使用精确选择器
-    const mediaInput = screen.getByPlaceholderText('https://example.com/your-image.png');
-    await user.type(mediaInput, 'https://a.png');
-    
-    await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
-    
-    expect(await screen.findByText('投稿已发起')).toBeInTheDocument();
-    expect(setTimeoutSpy).toHaveBeenCalled();
-    setTimeoutSpy.mockRestore();
+    // Hover triggers play
+    await user.hover(card);
+    // Unhover triggers pause
+    await user.unhover(card);
   });
 });

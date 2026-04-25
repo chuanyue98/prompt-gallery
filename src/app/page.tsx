@@ -43,10 +43,16 @@ export default function Home() {
         <Gallery />
       </div>
 
-      <footer className="relative z-10 mt-20 overflow-hidden px-6 py-32 text-center">
+      <footer className="relative z-10 mt-32 overflow-hidden px-6 py-24 text-center">
         <div className="absolute top-0 left-1/2 h-[1px] w-full -translate-x-1/2 bg-gradient-to-r from-transparent via-[var(--border-soft)] to-transparent" />
-        <p className="mb-4 text-xs font-black uppercase tracking-[0.4em] text-[var(--text-muted)]">Unleash the Power of AI</p>
-        <p className="text-[10px] font-medium text-[var(--text-secondary)] opacity-70">&copy; 2026 Prompt Gallery Project. All Rights Reserved.</p>
+        <div className="mx-auto max-w-xl space-y-6">
+          <p className="font-heading text-[10px] font-black uppercase tracking-[0.5em] text-[var(--text-muted)] opacity-80">Unleash the Power of AI</p>
+          <div className="h-px w-12 mx-auto bg-[var(--accent)] opacity-30" />
+          <p className="font-heading text-[11px] font-black tracking-[0.2em] text-[var(--text-secondary)] opacity-70">
+            &copy; 2026 PROMPT GALLERY PROJECT.<br/>
+            ALL RIGHTS RESERVED.
+          </p>
+        </div>
       </footer>
     </main>
   );
