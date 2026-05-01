@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { GalleryItem } from '@/types/gallery';
-import { getGalleryMediaUrl, isExternalUrl } from '@/lib/gallery';
+import { getGalleryMediaUrl, isExternalUrl, getPrimaryMediaType, isVideoAsset } from '@/lib/gallery';
 
 interface DetailModalProps {
   item: GalleryItem;
@@ -37,7 +37,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 }) => {
   const mediaUrl = getGalleryMediaUrl(item, 'src');
   const coverUrl = getGalleryMediaUrl(item, 'cover');
-  const isVideo = item.media[0].type === 'video';
+  const primaryMediaType = getPrimaryMediaType(item);
+  const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(mediaUrl));
 
   return (
     <div 
@@ -52,13 +53,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           className="relative flex w-full items-center justify-center border-b sm:border-b-0 sm:border-r border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel-strong)_88%,black)] md:w-3/5 shrink-0 aspect-square sm:aspect-auto sm:min-h-[400px] max-h-[35vh] sm:max-h-none cursor-zoom-in"
           onClick={onLightboxOpen}
         >
-          {isVideo ? (
-            <video src={mediaUrl} className="w-full h-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
-          ) : isExternalUrl(coverUrl) ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} className="w-full h-full object-contain" alt={item.description || item.slug} />
+          {mediaUrl ? (
+            isVideo ? (
+              <video src={mediaUrl} className="w-full h-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
+            ) : isExternalUrl(coverUrl) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverUrl} className="w-full h-full object-contain" alt={item.description || item.slug} />
+            ) : (
+              <Image src={coverUrl} className="object-contain" alt={item.description || item.slug} fill unoptimized />
+            )
           ) : (
-            <Image src={coverUrl} className="object-contain" alt={item.description || item.slug} fill unoptimized />
+            <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
+              暂无媒体内容
+            </div>
           )}
           <div data-testid="mobile-fullscreen-hint" className="absolute bottom-4 right-4 rounded-full bg-black/40 p-2 text-white/70 backdrop-blur-md sm:hidden">
             🔍
