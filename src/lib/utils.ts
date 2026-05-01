@@ -10,9 +10,11 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
+export const randomHex5 = (): string => Math.floor(Math.random() * 0x100000).toString(16).padStart(5, '0');
+
 export const slugify = (text: string): string => {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '-')
-    .slice(0, 30) + '-' + Math.random().toString(36).substring(7);
+    .slice(0, 30) + '-' + randomHex5();
 };
