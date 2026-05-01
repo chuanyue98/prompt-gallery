@@ -1,11 +1,13 @@
 import { describe, expect, it, vi, beforeEach, Mock } from 'vitest';
 import { NextRequest } from 'next/server';
-import {
-  buildContributionIndexMd,
-  validateCreateContributionInput,
-  POST,
-  buildContributionSlug,
-} from '@/app/api/contribute/route';
+
+vi.mock('@/lib/env', () => ({
+  env: {
+    APP_ID: '123',
+    PRIVATE_KEY: 'key',
+    INSTALLATION_ID: '456',
+  },
+}));
 
 // Mock GitHub lib but keep original inferMediaTypeFromUrl for its own test
 vi.mock('@/lib/github', async (importOriginal) => {
@@ -18,6 +20,13 @@ vi.mock('@/lib/github', async (importOriginal) => {
     inferMediaTypeFromUrl: actual.inferMediaTypeFromUrl,
   };
 });
+
+import {
+  buildContributionIndexMd,
+  validateCreateContributionInput,
+  POST,
+  buildContributionSlug,
+} from '@/app/api/contribute/route';
 
 import { 
   getOctokit, 
@@ -87,6 +96,7 @@ describe('POST handler integration', () => {
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
     
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    (req as unknown as { formData: () => Promise<FormData> }).formData = async () => formData;
     const res = await POST(req);
     expect(res.status).toBe(200);
   });
@@ -95,10 +105,11 @@ describe('POST handler integration', () => {
     const formData = new FormData();
     formData.append('title', 'T');
     formData.append('prompt', 'P');
-    formData.append('file', new File([''], 'a.png', { type: 'image/png' }));
+    formData.append('file', new Blob(['abc'], { type: 'image/png' }), 'a.png');
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
     
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    (req as unknown as { formData: () => Promise<FormData> }).formData = async () => formData;
     const res = await POST(req);
     expect(res.status).toBe(200);
   });
