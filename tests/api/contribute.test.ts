@@ -29,9 +29,15 @@ import {
 describe('API Route unit tests', () => {
   it('buildContributionSlug covers all branches', () => {
     // Branch: cleanTitle.length > 0
-    expect(buildContributionSlug({ title: 'My Title' })).toMatch(/^My-Title-[a-z0-9]{5}$/);
+    expect(buildContributionSlug({ title: 'My Title' })).toMatch(/^My-Title-[0-9a-f]{5}$/);
     // Branch: cleanTitle.length === 0
-    expect(buildContributionSlug({ title: ' /?* ' })).toMatch(/^contribution-[a-z0-9]{5}$/);
+    expect(buildContributionSlug({ title: ' /?* ' })).toMatch(/^contribution-[0-9a-f]{5}$/);
+  });
+
+  it('buildContributionSlug generates a unique suffix on each call', () => {
+    const slug1 = buildContributionSlug({ title: 'Test' });
+    const slug2 = buildContributionSlug({ title: 'Test' });
+    expect(slug1).not.toBe(slug2);
   });
 
   it('validateCreateContributionInput covers all branches', () => {
@@ -87,6 +93,9 @@ describe('POST handler integration', () => {
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
     
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    // Mock formData() to avoid undici's multipart/form-data parsing issues in test environment
+    req.formData = async () => formData;
+    
     const res = await POST(req);
     expect(res.status).toBe(200);
   });
@@ -95,10 +104,14 @@ describe('POST handler integration', () => {
     const formData = new FormData();
     formData.append('title', 'T');
     formData.append('prompt', 'P');
-    formData.append('file', new File([''], 'a.png', { type: 'image/png' }));
+    const file = new File(['hello content'], 'a.png', { type: 'image/png' });
+    formData.append('file', file);
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
     
-    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST' });
+    // Mock formData() to avoid undici's multipart/form-data parsing issues in test environment
+    req.formData = async () => formData;
+    
     const res = await POST(req);
     expect(res.status).toBe(200);
   });

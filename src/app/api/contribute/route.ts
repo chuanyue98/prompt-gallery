@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Octokit } from 'octokit';
-import { 
-  getOctokit, 
-  createContributionPullRequest, 
+import {
+  getOctokit,
+  createContributionPullRequest,
   requestDeletionPullRequest,
   inferMediaTypeFromUrl,
   MediaType
 } from '@/lib/github';
+import { randomHex5 } from '@/lib/utils';
 
 interface CreateContributionInput {
   title: string;
@@ -37,7 +38,7 @@ export function buildContributionSlug(input: {
   if (cleanTitle.length > 0) {
     base = cleanTitle;
   }
-  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  const randomSuffix = randomHex5();
 
   return `${base}-${randomSuffix}`;
 }

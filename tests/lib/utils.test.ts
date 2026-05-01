@@ -36,11 +36,14 @@ describe('copyToClipboard', () => {
 });
 
 describe('slugify', () => {
-  it('normalizes the title and appends a random suffix', () => {
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
+  it('normalizes the title and appends a 5-char hex suffix', () => {
+    const result = slugify('Hello Prompt Gallery!!');
+    expect(result).toMatch(/^hello-prompt-gallery---[0-9a-f]{5}$/);
+  });
 
-    expect(slugify('Hello Prompt Gallery!!')).toBe('hello-prompt-gallery---xjylrx');
-
-    randomSpy.mockRestore();
+  it('generates a unique suffix on each call', () => {
+    const slug1 = slugify('same');
+    const slug2 = slugify('same');
+    expect(slug1).not.toBe(slug2);
   });
 });

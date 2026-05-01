@@ -1,5 +1,6 @@
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
+import { randomHex5 } from './utils';
 
 export type MediaType = 'video' | 'image';
 
@@ -190,7 +191,7 @@ export async function requestDeletionPullRequest(
   });
 
   // 6. Create branch
-  const branchName = `delete/${slug}-${Math.random().toString(36).substring(7)}`;
+  const branchName = `delete/${slug}-${randomHex5()}`;
   await octokit.rest.git.createRef({
     owner: REPO_OWNER,
     repo: REPO_NAME,
