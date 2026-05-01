@@ -115,7 +115,7 @@ ${input.prompt}
 
 export async function POST(req: NextRequest) {
   try {
-    const octokit = getOctokit();
+    const octokit = await getOctokit();
     const REPO_OWNER = process.env.REPO_OWNER || 'chuanyue98';
     const REPO_NAME = process.env.REPO_NAME || 'prompt-gallery';
 

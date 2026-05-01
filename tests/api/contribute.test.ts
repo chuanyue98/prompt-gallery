@@ -1,12 +1,14 @@
 import { describe, expect, it, vi, beforeEach, Mock } from 'vitest';
 import { NextRequest } from 'next/server';
-import {
-  buildContributionIndexMd,
-  validateCreateContributionInput,
-  POST,
-  buildContributionSlug,
-  isHttpOrHttpsUrl,
-} from '@/app/api/contribute/route';
+
+vi.mock('@/lib/env', () => ({
+  loadEnv: () => ({ APP_ID: '123', PRIVATE_KEY: 'key', INSTALLATION_ID: '456' }),
+  env: {
+    APP_ID: '123',
+    PRIVATE_KEY: 'key',
+    INSTALLATION_ID: '456',
+  },
+}));
 
 // Mock GitHub lib but keep original inferMediaTypeFromUrl for its own test
 vi.mock('@/lib/github', async (importOriginal) => {
@@ -20,12 +22,24 @@ vi.mock('@/lib/github', async (importOriginal) => {
   };
 });
 
-import { 
-  getOctokit, 
-  createContributionPullRequest, 
+import {
+  buildContributionIndexMd,
+  validateCreateContributionInput,
+  POST,
+  buildContributionSlug,
+  isHttpOrHttpsUrl,
+} from '@/app/api/contribute/route';
+
+import {
+  getOctokit,
+  createContributionPullRequest,
   requestDeletionPullRequest,
-  MediaType
+  MediaType,
 } from '@/lib/github';
+
+const mockFormDataRequest = (req: NextRequest, formData: FormData) => {
+  (req as unknown as { formData: () => Promise<FormData> }).formData = async () => formData;
+};
 
 describe('isHttpOrHttpsUrl', () => {
   it('accepts http and https URLs', () => {
@@ -51,9 +65,7 @@ describe('isHttpOrHttpsUrl', () => {
 
 describe('API Route unit tests', () => {
   it('buildContributionSlug covers all branches', () => {
-    // Branch: cleanTitle.length > 0
     expect(buildContributionSlug({ title: 'My Title' })).toMatch(/^My-Title-[0-9a-f]{5}$/);
-    // Branch: cleanTitle.length === 0
     expect(buildContributionSlug({ title: ' /?* ' })).toMatch(/^contribution-[0-9a-f]{5}$/);
   });
 
@@ -64,20 +76,16 @@ describe('API Route unit tests', () => {
   });
 
   it('validateCreateContributionInput covers all branches', () => {
-    // Missing fields
     expect(validateCreateContributionInput({ title: '', prompt: '', mediaUrl: '', file: null }).error)
       .toContain('Missing required fields');
-    
-    // Both file and mediaUrl
+
     const file = new File([''], 'a.png', { type: 'image/png' });
     expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: 'http', file }).error)
       .toContain('Provide either a media file or a media URL');
 
-    // Invalid media URL type
     expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: 'http://a.txt', file: null }).error)
       .toContain('Media URL must point directly');
-    
-    // Success with file
+
     expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: '', file }).error).toBeNull();
   });
 });
@@ -116,6 +124,7 @@ describe('POST handler integration', () => {
     formData.append('sourceUrl', 'https://example.com/source');
 
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: expect.stringContaining('mediaUrl') });
@@ -129,6 +138,7 @@ describe('POST handler integration', () => {
     formData.append('sourceUrl', 'ftp://example.com/source');
 
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: expect.stringContaining('sourceUrl') });
@@ -143,6 +153,7 @@ describe('POST handler integration', () => {
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
 
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(200);
   });
@@ -153,11 +164,9 @@ describe('POST handler integration', () => {
     formData.append('prompt', 'P');
     formData.append('mediaUrl', 'https://example.com/a.png');
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
-    
+
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
-    // Mock formData() to avoid undici's multipart/form-data parsing issues in test environment
-    req.formData = async () => formData;
-    
+    mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(200);
   });
@@ -166,14 +175,11 @@ describe('POST handler integration', () => {
     const formData = new FormData();
     formData.append('title', 'T');
     formData.append('prompt', 'P');
-    const file = new File(['hello content'], 'a.png', { type: 'image/png' });
-    formData.append('file', file);
+    formData.append('file', new Blob(['hello content'], { type: 'image/png' }), 'a.png');
     (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
 
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST' });
-    // Mock formData() to avoid undici's multipart/form-data parsing issues in test environment
-    req.formData = async () => formData;
-
+    mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(200);
   });

@@ -1,5 +1,6 @@
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
+import { loadEnv } from './env';
 import { randomHex5 } from './utils';
 
 export type MediaType = 'video' | 'image';
@@ -25,20 +26,14 @@ export interface GitHubConfig {
 }
 
 export function getOctokit() {
-  const APP_ID = process.env.APP_ID;
-  const PRIVATE_KEY = process.env.PRIVATE_KEY;
-  const INSTALLATION_ID = process.env.INSTALLATION_ID;
-
-  if (!APP_ID || !PRIVATE_KEY || !INSTALLATION_ID) {
-    throw new Error('GitHub App credentials not configured');
-  }
+  const env = loadEnv();
 
   return new Octokit({
     authStrategy: createAppAuth,
     auth: {
-      appId: APP_ID,
-      privateKey: PRIVATE_KEY,
-      installationId: INSTALLATION_ID,
+      appId: env.APP_ID,
+      privateKey: env.PRIVATE_KEY,
+      installationId: env.INSTALLATION_ID,
     },
   });
 }
