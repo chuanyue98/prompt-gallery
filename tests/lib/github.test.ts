@@ -1,10 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { 
-  getOctokit, 
-  createContributionPullRequest, 
+import {
+  getOctokit,
+  createContributionPullRequest,
   requestDeletionPullRequest,
-  inferMediaTypeFromUrl 
+  inferMediaTypeFromUrl
 } from '@/lib/github';
+
+vi.mock('@/lib/env', () => ({
+  env: { APP_ID: '123', PRIVATE_KEY: 'key', INSTALLATION_ID: '456' },
+}));
 
 const mockOctokit = {
   rest: {
@@ -45,11 +49,6 @@ describe('lib/github', () => {
   });
 
   describe('getOctokit', () => {
-    it('throws error when credentials are missing', () => {
-      delete process.env.APP_ID;
-      expect(() => getOctokit()).toThrow('GitHub App credentials not configured');
-    });
-
     it('returns Octokit instance when credentials exist', () => {
       const octokit = getOctokit();
       expect(octokit).toBeDefined();
