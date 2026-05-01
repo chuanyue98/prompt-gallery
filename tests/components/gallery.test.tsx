@@ -46,6 +46,15 @@ const externalImageItem: GalleryItem = {
   content: '### Prompt\nExternal',
 };
 
+const emptyMediaItem: GalleryItem = {
+  slug: 'empty-media-item',
+  description: 'Missing media',
+  tags: ['broken'],
+  mediaPath: '/media/empty-media-item/',
+  media: [],
+  content: '### Prompt\nBroken',
+};
+
 describe('Gallery component helpers', () => {
   it('readFileAsDataURL reads file', async () => {
     const file = new File(['h'], 't.txt', { type: 'text/plain' });
@@ -76,6 +85,11 @@ describe('Gallery component helpers', () => {
     expect(getGalleryMediaUrl({ ...galleryItems[1], media: [], mediaUrl: 'http://a.com' }, 'src')).toBe('http://a.com');
     // 没有 asset 返回空
     expect(getGalleryMediaUrl({ ...galleryItems[0], media: [], mediaUrl: undefined }, 'src')).toBe('');
+  });
+
+  it('gracefully handles items without media', () => {
+    expect(filterGalleryItems([emptyMediaItem], '', 'all')).toHaveLength(1);
+    expect(filterGalleryItems([emptyMediaItem], '', 'image')).toHaveLength(0);
   });
 
   it('isExternalUrl and isVideoAsset handle branches', () => {
@@ -276,6 +290,11 @@ describe('GalleryCard direct tests', () => {
     vi.clearAllMocks();
   });
 
+  it('does not crash when media is missing', () => {
+    render(<GalleryCard item={emptyMediaItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    expect(screen.getByText('暂无媒体内容')).toBeInTheDocument();
+  });
+
   it('shows SUCCESS text when isCopied is true', () => {
     render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={true} />);
     expect(screen.getByText('SUCCESS ✓')).toBeInTheDocument();
@@ -343,6 +362,11 @@ describe('Lightbox direct tests', () => {
     expect(document.querySelector('video')).toBeInTheDocument();
   });
 
+  it('shows fallback when media is missing', () => {
+    render(<Lightbox item={emptyMediaItem} onClose={vi.fn()} />);
+    expect(screen.getByText('暂无媒体内容')).toBeInTheDocument();
+  });
+
   it('calls onClose when backdrop is clicked', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
@@ -374,6 +398,11 @@ describe('DetailModal direct tests', () => {
   it('renders video element for video items', () => {
     render(<DetailModal item={galleryItems[0]} {...baseProps} />);
     expect(document.querySelector('video')).toBeInTheDocument();
+  });
+
+  it('shows fallback when media is missing', () => {
+    render(<DetailModal item={emptyMediaItem} {...baseProps} />);
+    expect(screen.getByText('暂无媒体内容')).toBeInTheDocument();
   });
 
   it('calls onClose when backdrop is clicked', async () => {
