@@ -7,7 +7,7 @@ import {
 } from '@/lib/github';
 
 vi.mock('@/lib/env', () => ({
-  env: { APP_ID: '123', PRIVATE_KEY: 'key', INSTALLATION_ID: '456' },
+  loadEnv: () => ({ APP_ID: '123', PRIVATE_KEY: 'key', INSTALLATION_ID: '456' }),
 }));
 
 const mockOctokit = {
@@ -49,8 +49,8 @@ describe('lib/github', () => {
   });
 
   describe('getOctokit', () => {
-    it('returns Octokit instance when credentials exist', () => {
-      const octokit = getOctokit();
+    it('returns Octokit instance when credentials exist', async () => {
+      const octokit = await getOctokit();
       expect(octokit).toBeDefined();
     });
   });

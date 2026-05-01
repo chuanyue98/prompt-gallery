@@ -1,6 +1,6 @@
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
-import { env } from './env';
+import { loadEnv } from './env';
 import { randomHex5 } from './utils';
 
 export type MediaType = 'video' | 'image';
@@ -26,6 +26,8 @@ export interface GitHubConfig {
 }
 
 export function getOctokit() {
+  const env = loadEnv();
+
   return new Octokit({
     authStrategy: createAppAuth,
     auth: {

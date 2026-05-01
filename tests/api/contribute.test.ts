@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, Mock } from 'vitest';
 import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/env', () => ({
+  loadEnv: () => ({ APP_ID: '123', PRIVATE_KEY: 'key', INSTALLATION_ID: '456' }),
   env: {
     APP_ID: '123',
     PRIVATE_KEY: 'key',
