@@ -8,20 +8,29 @@ export function isVideoAsset(value: string) {
   return /\.(mp4|webm|mov)(\?.*)?$/i.test(value);
 }
 
+export function getPrimaryMedia(item: GalleryItem) {
+  return item.media?.[0] ?? null;
+}
+
+export function getPrimaryMediaType(item: GalleryItem) {
+  return getPrimaryMedia(item)?.type ?? null;
+}
+
 export function filterGalleryItems(items: GalleryItem[], search: string, category: 'all' | 'video' | 'image') {
   const normalizedSearch = search.toLowerCase();
 
   return items.filter((item) => {
     const matchesSearch = item.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
       || item.description.toLowerCase().includes(normalizedSearch);
-    const matchesCategory = category === 'all' || item.media[0].type === category;
+    const primaryMediaType = getPrimaryMediaType(item);
+    const matchesCategory = category === 'all' || primaryMediaType === category;
 
     return matchesSearch && matchesCategory;
   });
 }
 
 export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover') {
-  const asset = item.media?.[0]?.[field] || item.mediaUrl;
+  const asset = getPrimaryMedia(item)?.[field] || item.mediaUrl;
 
   if (!asset) {
     return '';

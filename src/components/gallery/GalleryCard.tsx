@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { GalleryItem } from '@/types/gallery';
-import { getGalleryMediaUrl, isVideoAsset, isExternalUrl, safelyPlayVideo } from '@/lib/gallery';
+import { getGalleryMediaUrl, isVideoAsset, isExternalUrl, safelyPlayVideo, getPrimaryMediaType } from '@/lib/gallery';
 
 interface GalleryCardProps {
   item: GalleryItem;
@@ -20,7 +20,8 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
 }) => {
   const coverUrl = getGalleryMediaUrl(item, 'cover');
   const srcUrl = getGalleryMediaUrl(item, 'src');
-  const isVideo = item.media[0].type === 'video';
+  const primaryMediaType = getPrimaryMediaType(item);
+  const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(srcUrl));
 
   return (
     <div className="group relative">
@@ -46,13 +47,19 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             }
           }}
         >
-          {isVideo && isVideoAsset(coverUrl) ? (
-            <video src={coverUrl} className="w-full h-full object-cover" muted playsInline />
-          ) : isExternalUrl(coverUrl) ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} alt={item.description || item.slug} className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" />
+          {coverUrl ? (
+            isVideo && isVideoAsset(coverUrl) ? (
+              <video src={coverUrl} className="w-full h-full object-cover" muted playsInline />
+            ) : isExternalUrl(coverUrl) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverUrl} alt={item.description || item.slug} className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" />
+            ) : (
+              <Image src={coverUrl} alt={item.description || item.slug} className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110" fill unoptimized />
+            )
           ) : (
-            <Image src={coverUrl} alt={item.description || item.slug} className="object-cover transition-transform duration-1000 ease-out group-hover:scale-110" fill unoptimized />
+            <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
+              暂无媒体内容
+            </div>
           )}
           
           {isVideo && (

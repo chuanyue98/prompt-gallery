@@ -25,6 +25,15 @@ interface ValidationResult {
   mediaType: MediaType | null;
 }
 
+export function isHttpOrHttpsUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function buildContributionSlug(input: {
   title: string;
 }) {
@@ -143,7 +152,15 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     }
   }
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
-  
+
+  if (mediaUrl && !isHttpOrHttpsUrl(mediaUrl)) {
+    return NextResponse.json({ error: 'mediaUrl 只能使用 http 或 https 协议' }, { status: 400 });
+  }
+
+  if (sourceUrl && !isHttpOrHttpsUrl(sourceUrl)) {
+    return NextResponse.json({ error: 'sourceUrl 只能使用 http 或 https 协议' }, { status: 400 });
+  }
+
   const validation = validateCreateContributionInput({ title, prompt, mediaUrl, file });
 
   if (validation.error || !validation.mediaType) {
