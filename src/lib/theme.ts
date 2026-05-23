@@ -1,4 +1,4 @@
-export type ThemeId = 'cyber-obsidian' | 'soft-ui';
+export type ThemeId = 'cyber-obsidian' | 'soft-ui' | 'cream-warm';
 
 export interface ThemeOption {
   id: ThemeId;
@@ -9,7 +9,7 @@ export interface ThemeOption {
 }
 
 export const THEME_STORAGE_KEY = 'prompt-gallery-theme';
-export const DEFAULT_THEME: ThemeId = 'cyber-obsidian';
+export const DEFAULT_THEME: ThemeId = 'cream-warm';
 
 export const THEME_OPTIONS: ThemeOption[] = [
   {
@@ -24,6 +24,12 @@ export const THEME_OPTIONS: ThemeOption[] = [
     description: '柔和浮雕效率主题',
     supportsSoftSurface: true,
   },
+  {
+    id: 'cream-warm',
+    label: '奶油',
+    description: '温暖精致 Notion 风',
+    supportsSoftSurface: true,
+  },
 ];
 
 export function getThemeLabel(theme: ThemeId) {
@@ -31,7 +37,7 @@ export function getThemeLabel(theme: ThemeId) {
 }
 
 export function isThemeId(value: string | null | undefined): value is ThemeId {
-  return value === 'cyber-obsidian' || value === 'soft-ui';
+  return value === 'cyber-obsidian' || value === 'soft-ui' || value === 'cream-warm';
 }
 
 export function resolveTheme(value: string | null | undefined): ThemeId {
@@ -47,7 +53,7 @@ export function applyThemeToDocument(theme: ThemeId, root?: HTMLElement | null) 
   }
 
   target.dataset.theme = theme;
-  target.style.colorScheme = theme === 'soft-ui' ? 'light' : 'dark';
+  target.style.colorScheme = (theme === 'soft-ui' || theme === 'cream-warm') ? 'light' : 'dark';
 
   return theme;
 }
@@ -96,12 +102,12 @@ export function getThemeInitScript() {
   return `(() => {
     const storageKey = ${JSON.stringify(THEME_STORAGE_KEY)};
     const defaultTheme = ${JSON.stringify(DEFAULT_THEME)};
-    const isTheme = (value) => value === 'cyber-obsidian' || value === 'soft-ui';
+    const isTheme = (value) => value === 'cyber-obsidian' || value === 'soft-ui' || value === 'cream-warm';
     try {
       const stored = window.localStorage.getItem(storageKey);
       const theme = isTheme(stored) ? stored : defaultTheme;
       document.documentElement.dataset.theme = theme;
-      document.documentElement.style.colorScheme = theme === 'soft-ui' ? 'light' : 'dark';
+      document.documentElement.style.colorScheme = (theme === 'soft-ui' || theme === 'cream-warm') ? 'light' : 'dark';
     } catch {
       document.documentElement.dataset.theme = defaultTheme;
       document.documentElement.style.colorScheme = 'dark';
