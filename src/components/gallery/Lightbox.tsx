@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, getPrimaryMediaType, isVideoAsset } from '@/lib/gallery';
 
@@ -26,7 +25,8 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
           isVideo ? (
             <video src={mediaUrl} className="max-w-full max-h-full" controls autoPlay />
           ) : (
-            <Image src={coverUrl} alt={item.description} className="object-contain" fill unoptimized />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt={item.description} className="max-w-full max-h-full object-contain" />
           )
         ) : (
           <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">

@@ -1,14 +1,59 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { GalleryItem } from '@/types/gallery';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
-import { filterGalleryItems } from '@/lib/gallery';
+import { filterGalleryItems, getGalleryMediaUrl } from '@/lib/gallery';
 
 import GalleryHeader from './GalleryHeader';
 import GalleryCard from './GalleryCard';
 import DetailModal from './DetailModal';
 import Lightbox from './Lightbox';
+
+function Hero({
+  item,
+  onOpen,
+  onCopy,
+}: {
+  item: GalleryItem | null;
+  onOpen: (item: GalleryItem) => void;
+  onCopy: (item: GalleryItem) => void;
+}) {
+  if (!item) {
+    return null;
+  }
+
+  const coverUrl = getGalleryMediaUrl(item, 'cover');
+
+  return (
+    <section className="hero" onClick={() => onOpen(item)}>
+      {coverUrl ? <img src={coverUrl} alt={item.slug} /> : null}
+      <div className="hero-grad" />
+      <div className="hero-content">
+        <div className="hero-tag">
+          <span className="dot" /> Editor&apos;s pick / This week
+        </div>
+        <h2 className="hero-title">{item.slug}</h2>
+        <p className="hero-prompt">{item.description}</p>
+        <div className="hero-row">
+          <div className="author">
+            <span>{item.model ?? 'Prompt'}</span>
+          </div>
+          <button
+            type="button"
+            className="hero-copy"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy(item);
+            }}
+          >
+            Copy prompt
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -18,14 +63,10 @@ export default function Gallery() {
   const [category, setCategory] = useState<'all' | 'video' | 'image'>('all');
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
-  
-  // Delete related state
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
-  
-  // Lightbox state
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
@@ -34,14 +75,11 @@ export default function Gallery() {
     async function loadGalleryData() {
       try {
         const response = await fetch('/gallery-data.json');
-
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
 
         const data = (await response.json()) as GalleryItem[];
-
-        /* v8 ignore next 3 */
         if (!isMounted) {
           return;
         }
@@ -49,9 +87,7 @@ export default function Gallery() {
         setItems(data);
         setLoadError(null);
       } catch (error) {
-        console.error("Failed to load gallery data:", error);
-
-        /* v8 ignore next 3 */
+        console.error('Failed to load gallery data:', error);
         if (!isMounted) {
           return;
         }
@@ -59,7 +95,6 @@ export default function Gallery() {
         setItems([]);
         setLoadError('内容数据加载失败，请稍后刷新重试。');
       } finally {
-        /* v8 ignore next 3 */
         if (isMounted) {
           setIsLoading(false);
         }
@@ -67,7 +102,6 @@ export default function Gallery() {
     }
 
     loadGalleryData();
-
     return () => {
       isMounted = false;
     };
@@ -76,16 +110,20 @@ export default function Gallery() {
   useEffect(() => {
     if (selectedItem) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('detail-modal-active');
       document.body.classList.remove('lightbox-active');
       if (isLightboxOpen) {
         document.body.classList.add('lightbox-active');
       }
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('detail-modal-active');
       document.body.classList.remove('lightbox-active');
     }
+
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('detail-modal-active');
       document.body.classList.remove('lightbox-active');
     };
   }, [selectedItem, isLightboxOpen]);
@@ -98,7 +136,6 @@ export default function Gallery() {
   }, []);
 
   const handleDeleteRequest = useCallback(async (item: GalleryItem) => {
-    /* v8 ignore next 3 */
     if (!deleteReason.trim()) {
       return;
     }
@@ -107,9 +144,7 @@ export default function Gallery() {
     try {
       const response = await fetch('/api/contribute?action=delete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug: item.slug,
           type: item.media[0].type,
@@ -118,15 +153,12 @@ export default function Gallery() {
       });
 
       const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || '删除申请提交失败');
+        throw new Error(result.error || '删除请求提交失败');
       }
 
       setDeleteSuccess(true);
       setDeleteReason('');
-      
-      /* v8 ignore next 5 */
       setTimeout(() => {
         setSelectedItem(null);
         setDeleteSuccess(false);
@@ -140,72 +172,64 @@ export default function Gallery() {
     }
   }, [deleteReason]);
 
-  const filteredItems = useMemo(() => 
-    filterGalleryItems(items, search, category),
-    [items, search, category]
-  );
-
-  const handleSelect = useCallback((item: GalleryItem) => {
-    setSelectedItem(item);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setSelectedItem(null);
-    setShowDeleteForm(false);
-    setIsLightboxOpen(false);
-  }, []);
-
-  const handleOpenLightbox = useCallback(() => {
-    setIsLightboxOpen(true);
-  }, []);
-
-  const handleCloseLightbox = useCallback(() => {
-    setIsLightboxOpen(false);
-  }, []);
+  const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
+  const heroItem = filteredItems[0] ?? items[0] ?? null;
 
   return (
-    <div className="mx-auto max-w-[1800px] px-4 sm:px-6">
-      <GalleryHeader 
+    <div className="main">
+      <Hero
+        item={heroItem}
+        onOpen={setSelectedItem}
+        onCopy={(item) => handleCopy(item.content, item.slug)}
+      />
+
+      <GalleryHeader
         search={search}
         onSearchChange={setSearch}
         category={category}
         onCategoryChange={setCategory}
+        totalCount={isLoading ? undefined : items.length}
+        filteredCount={isLoading ? undefined : filteredItems.length}
       />
 
-      <div className="grid grid-cols-2 max-[350px]:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
-        {filteredItems.map(item => (
-          <GalleryCard 
-            key={item.slug}
-            item={item}
-            onSelect={handleSelect}
-            onCopy={handleCopy}
-            isCopied={copiedSlug === item.slug}
-          />
-        ))}
-      </div>
-
-      {!isLoading && loadError && (
+      {!isLoading && loadError ? (
         <div className="theme-danger-button mt-10 rounded-[2rem] px-6 py-5 text-center text-sm">
           {loadError}
         </div>
-      )}
+      ) : null}
 
-      {!isLoading && !loadError && filteredItems.length === 0 && (
-        <div className="theme-panel mt-10 rounded-[2rem] px-6 py-10 text-center">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">No Results</p>
-          <p className="mt-3 text-sm text-[var(--text-secondary)]">
-            {items.length === 0 ? '当前还没有可展示的内容。' : '没有匹配当前筛选条件的内容。'}
-          </p>
+      {!isLoading && !loadError && filteredItems.length === 0 ? (
+        <div className="empty">
+          <div className="empty-t">Nothing matches that</div>
+          <div className="empty-s">{items.length === 0 ? '当前还没有可展示的内容。' : '没有匹配当前筛选条件的内容。'}</div>
         </div>
-      )}
+      ) : null}
 
-      {selectedItem && (
-        <DetailModal 
+      {!loadError && filteredItems.length > 0 ? (
+        <div className="masonry">
+          {filteredItems.map((item) => (
+            <GalleryCard
+              key={item.slug}
+              item={item}
+              onSelect={setSelectedItem}
+              onCopy={handleCopy}
+              isCopied={copiedSlug === item.slug}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {selectedItem ? (
+        <DetailModal
           item={selectedItem}
-          onClose={handleCloseModal}
+          onClose={() => {
+            setSelectedItem(null);
+            setShowDeleteForm(false);
+            setIsLightboxOpen(false);
+          }}
           onCopy={handleCopy}
           copiedSlug={copiedSlug}
-          onLightboxOpen={handleOpenLightbox}
+          onLightboxOpen={() => setIsLightboxOpen(true)}
           showDeleteForm={showDeleteForm}
           setShowDeleteForm={setShowDeleteForm}
           deleteReason={deleteReason}
@@ -214,11 +238,11 @@ export default function Gallery() {
           isDeleting={isDeleting}
           deleteSuccess={deleteSuccess}
         />
-      )}
+      ) : null}
 
-      {selectedItem && isLightboxOpen && (
-        <Lightbox item={selectedItem} onClose={handleCloseLightbox} />
-      )}
+      {selectedItem && isLightboxOpen ? (
+        <Lightbox item={selectedItem} onClose={() => setIsLightboxOpen(false)} />
+      ) : null}
     </div>
   );
 }

@@ -7,6 +7,23 @@ interface GalleryHeaderProps {
   onSearchChange: (value: string) => void;
   category: 'all' | 'video' | 'image';
   onCategoryChange: (cat: 'all' | 'video' | 'image') => void;
+  totalCount?: number;
+  filteredCount?: number;
+}
+
+const CATEGORIES = [
+  { id: 'all', label: '全部' },
+  { id: 'video', label: '视频' },
+  { id: 'image', label: '图片' },
+] as const;
+
+function FlameIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3c2 4-2 5-2 9a4 4 0 0 0 8 0c0-2-1-3-2-4 0 2-1 3-2 3 1-3-1-6-2-8z" />
+      <path d="M10 14a2 2 0 1 0 4 0" />
+    </svg>
+  );
 }
 
 export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
@@ -14,34 +31,41 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   onSearchChange,
   category,
   onCategoryChange,
+  totalCount,
+  filteredCount,
 }) => {
-  return (
-    <div className="mx-auto mb-16 max-w-3xl space-y-6">
-      <div className="relative group">
-        <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-[var(--accent)] to-[var(--border-strong)] opacity-0 blur-xl transition duration-500 group-focus-within:opacity-20" />
-        <input
-          data-testid="gallery-search"
-          type="text"
-          value={search}
-          placeholder="搜索灵感 (SEARCH INSPIRATION)..."
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="theme-input relative w-full rounded-[1.75rem] py-5 pr-6 pl-14 font-heading text-sm font-medium tracking-wide backdrop-blur-md transition-all duration-300 focus:scale-[1.01]"
-        />
-        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg text-[var(--text-muted)] group-focus-within:scale-110 transition-transform duration-300">🔍</span>
-      </div>
+  const count = filteredCount ?? totalCount ?? 0;
 
-      <div className="theme-panel mx-auto flex w-fit justify-center rounded-[1.5rem] p-1.5 backdrop-blur-md" data-testid="gallery-category-switcher">
-        {(['all', 'video', 'image'] as const).map((cat) => (
+  return (
+    <div className="catstrip">
+      <div className="cats" data-testid="gallery-category-switcher">
+        <button className="cat trending on" type="button">
+          <FlameIcon /> Trending
+        </button>
+        {CATEGORIES.map((cat) => (
           <button
-            key={cat}
-            onClick={() => onCategoryChange(cat)}
-            className={`rounded-[1rem] px-6 py-2.5 text-[10px] sm:px-10 sm:text-xs font-heading font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-              category === cat ? 'theme-chip-active scale-105' : 'theme-chip hover:scale-105'
-            }`}
+            key={cat.id}
+            type="button"
+            onClick={() => onCategoryChange(cat.id)}
+            className={`cat ${category === cat.id ? 'on' : ''}`}
           >
-            {cat === 'all' ? '全部' : cat === 'video' ? '视频' : '图片'}
+            {cat.label}
           </button>
         ))}
+        <div className="cat-divider" />
+        <div className="search search-inline">
+          <input
+            data-testid="gallery-search"
+            type="text"
+            value={search}
+            placeholder="搜索灵感 (SEARCH INSPIRATION)..."
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="catstrip-right">
+        <span className="counter">{count.toLocaleString()} prompts</span>
       </div>
     </div>
   );
