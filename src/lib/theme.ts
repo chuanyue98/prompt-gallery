@@ -110,7 +110,7 @@ export function getThemeInitScript() {
       document.documentElement.style.colorScheme = (theme === 'soft-ui' || theme === 'cream-warm') ? 'light' : 'dark';
     } catch {
       document.documentElement.dataset.theme = defaultTheme;
-      document.documentElement.style.colorScheme = 'dark';
+      document.documentElement.style.colorScheme = (defaultTheme === 'soft-ui' || defaultTheme === 'cream-warm') ? 'light' : 'dark';
     }
   })();`;
 }

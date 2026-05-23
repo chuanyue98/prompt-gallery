@@ -108,7 +108,7 @@ body.lightbox-active nav.fixed {
 }
 
 nav.fixed {
-  transition: none;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 body.detail-modal-active nav.fixed {
@@ -122,6 +122,7 @@ input,
 textarea,
 select {
   font-family: inherit;
+  transition: background-color var(--theme-transition), border-color var(--theme-transition), color var(--theme-transition), box-shadow var(--theme-transition), transform var(--theme-transition);
 }
 
 .theme-body {
@@ -588,7 +589,7 @@ select {
   display: grid;
   grid-template-columns: 1fr 420px;
   border: 1px solid var(--border-soft);
-  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.9);
+  box-shadow: var(--shadow-soft);
   position: relative;
 }
 
