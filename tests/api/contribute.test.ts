@@ -96,6 +96,13 @@ describe('POST handler integration', () => {
     process.env.REPO_OWNER = 'test-owner';
     process.env.REPO_NAME = 'test-repo';
     (getOctokit as Mock).mockReturnValue({});
+    
+    // Mock global.fetch for media downloads
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+      headers: new Headers({ 'content-type': 'image/png' }),
+    });
   });
 
   it('handles deletion success and 404', async () => {

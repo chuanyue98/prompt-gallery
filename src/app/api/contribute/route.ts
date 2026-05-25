@@ -135,6 +135,45 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+async function downloadMedia(url: string): Promise<{ fileBase64: string; fileName: string }> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch media from URL: ${response.statusText}`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
+    throw new Error('File size exceeds 10MB limit');
+  }
+
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > MAX_FILE_SIZE) {
+    throw new Error('File size exceeds 10MB limit');
+  }
+
+  const fileBase64 = Buffer.from(buffer).toString('base64');
+  
+  // Try to get filename from URL or content-type
+  let fileName = 'media-file';
+  const urlPath = new URL(url).pathname;
+  const lastPart = urlPath.split('/').pop();
+  if (lastPart && lastPart.includes('.')) {
+    fileName = lastPart;
+  } else {
+    const contentType = response.headers.get('content-type');
+    if (contentType) {
+      // Split by ; to handle "image/jpeg; charset=utf-8"
+      const typePart = contentType.split(';')[0].trim();
+      const ext = typePart.split('/').pop();
+      if (ext) fileName = `media-file.${ext}`;
+    }
+  }
+
+  return { fileBase64, fileName };
+}
+
 async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_OWNER: string, REPO_NAME: string }) {
   const formData = await req.formData();
   const title = (formData.get('title') as string) || '';
@@ -170,18 +209,30 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
   const slug = buildContributionSlug({ title });
   const mediaType = validation.mediaType;
   
-  let fileName = mediaUrl;
+  let fileName = '';
   let fileBase64: string | null = null;
+
   if (file) {
     fileName = file.name;
     const fileBuffer = await file.arrayBuffer();
     fileBase64 = Buffer.from(fileBuffer).toString('base64');
+  } else if (mediaUrl) {
+    // Automatically download media from URL to save it locally
+    try {
+      const downloaded = await downloadMedia(mediaUrl);
+      fileName = downloaded.fileName;
+      fileBase64 = downloaded.fileBase64;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error during media download';
+      console.error('Failed to download media:', error);
+      // Fallback: if download fails, we could either error out or continue with just the URL
+      // Given user's request, erroring out is safer to ensure persistence.
+      return NextResponse.json({ error: `无法下载媒体文件进行本地保存: ${message}` }, { status: 500 });
+    }
   }
 
-  let assetReference = mediaUrl;
-  if (file) {
-    assetReference = fileName;
-  }
+  // assetReference should point to the local file we are about to commit
+  const assetReference = fileName;
 
   const indexMd = buildContributionIndexMd({
     title,
