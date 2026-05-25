@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import ContributeModal from '@/components/gallery/ContributeModal';
 import { ContributeForm } from '@/components/gallery/ContributeForm';
 import { ContributePreview } from '@/components/gallery/ContributePreview';
+import ContributeSuccess from '@/components/gallery/ContributeSuccess';
 
 describe('ContributeModal validation and errors', () => {
   it('shows validation error if title is empty', async () => {
@@ -229,7 +230,7 @@ describe('ContributePreview direct tests', () => {
     expect(onFileChange).not.toHaveBeenCalled();
   });
 
-  it('dragEnter is ignored when hasMediaUrls is true', () => {
+  it('dragEnter is ignored when mediaUrls is not empty', () => {
     render(
       <ContributePreview
         preview={null}
@@ -241,8 +242,8 @@ describe('ContributePreview direct tests', () => {
         submitSuccess={false}
       />
     );
-    const container = screen.getByText('1 Media Item');
-    fireEvent.dragEnter(container);
+    const img = screen.getByRole('img', { name: 'Preview' });
+    fireEvent.dragEnter(img);
     expect(screen.queryByText('📥')).not.toBeInTheDocument();
   });
 
@@ -290,7 +291,7 @@ describe('ContributePreview direct tests', () => {
         submitSuccess={true}
       />
     );
-    expect(screen.queryByText('清空链接')).not.toBeInTheDocument();
+    expect(screen.queryByText('✕')).not.toBeInTheDocument();
   });
 });
 
@@ -337,5 +338,13 @@ describe('DetailModal multi-media navigation', () => {
     // Previous image (back to 1)
     await user.click(screen.getByRole('button', { name: 'Previous media' }));
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  });
+});
+
+describe('ContributeSuccess direct tests', () => {
+  it('renders correctly with PR URL', () => {
+    render(<ContributeSuccess prUrl="https://github.com/pull/1" />);
+    expect(screen.getByText('投稿已发起')).toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('href', 'https://github.com/pull/1');
   });
 });
