@@ -101,28 +101,23 @@ body {
   transition: background-color var(--theme-transition), color var(--theme-transition);
 }
 
-body.lightbox-active nav.fixed {
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-nav.fixed {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-body.detail-modal-active nav.fixed {
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
-}
-
 button,
 input,
 textarea,
 select {
   font-family: inherit;
   transition: background-color var(--theme-transition), border-color var(--theme-transition), color var(--theme-transition), box-shadow var(--theme-transition), transform var(--theme-transition);
+}
+
+nav.fixed {
+  transition: none; /* 去掉过渡效果，实现立即收起 */
+}
+
+body.detail-modal-active nav.fixed,
+body.lightbox-active nav.fixed {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .theme-body {
