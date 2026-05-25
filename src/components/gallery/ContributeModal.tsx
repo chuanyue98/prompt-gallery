@@ -23,8 +23,43 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     sourceUrl: '' 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
   const [submitSuccess, setSubmissionSuccess] = useState<string | null>(null);
+
+  const handleParseLink = useCallback(async (url: string) => {
+    if (!url) return;
+    setIsParsing(true);
+    try {
+      const response = await fetch('/api/parse-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const result = await response.json();
+      if (result.success && result.metadata) {
+        const { title, prompt, image, video } = result.metadata;
+        setFormData((prev) => ({
+          ...prev,
+          title: title || prev.title,
+          prompt: prompt || prev.prompt,
+          mediaUrl: video || image || prev.mediaUrl,
+        }));
+        if (video || image) {
+          const mediaUrl = video || image;
+          setSubmissionMode('mediaUrl');
+          setFile(null);
+          setPreview(mediaUrl);
+        }
+      } else {
+        throw new Error(result.error || '解析失败');
+      }
+    } catch (error: any) {
+      alert('❌ 解析失败：' + error.message);
+    } finally {
+      setIsParsing(false);
+    }
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -124,13 +159,23 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
           ) : (
             <ContributeForm 
               formData={formData}
-              setFormData={setFormData}
+              setFormData={(dataOrFn) => {
+                setFormData((prev) => {
+                  const next = typeof dataOrFn === 'function' ? dataOrFn(prev) : dataOrFn;
+                  if (submissionMode === 'mediaUrl' && next.mediaUrl !== prev.mediaUrl) {
+                    setPreview(next.mediaUrl);
+                  }
+                  return next;
+                });
+              }}
               submissionMode={submissionMode}
               setSubmissionMode={setSubmissionMode}
               onSubmit={handleSubmit}
               isSubmitting={isSubmitting}
               canSubmit={canSubmit}
               onClearFileAndPreview={handleClearFile}
+              onParseLink={handleParseLink}
+              isParsing={isParsing}
             />
           )}
         </div>
