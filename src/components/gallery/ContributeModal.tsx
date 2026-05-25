@@ -19,7 +19,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     prompt: '', 
     tags: '', 
     model: '', 
-    mediaUrl: '', 
+    mediaUrls: [] as string[], 
     sourceUrl: '' 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,18 +38,20 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       });
       const result = await response.json();
       if (result.success && result.metadata) {
-        const { title, prompt, image, video } = result.metadata;
+        const { title, prompt, images, video } = result.metadata;
+        const mediaUrls = video ? [video] : images || [];
+        
         setFormData((prev) => ({
           ...prev,
           title: title || prev.title,
           prompt: prompt || prev.prompt,
-          mediaUrl: video || image || prev.mediaUrl,
+          mediaUrls: mediaUrls.length > 0 ? mediaUrls : prev.mediaUrls,
         }));
-        if (video || image) {
-          const mediaUrl = video || image;
+
+        if (mediaUrls.length > 0) {
           setSubmissionMode('mediaUrl');
           setFile(null);
-          setPreview(mediaUrl);
+          setPreview(mediaUrls[0]);
         }
       } else {
         throw new Error(result.error || '解析失败');
@@ -66,7 +68,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setSubmissionMode('upload');
-      setFormData((current) => ({ ...current, mediaUrl: '' }));
+      setFormData((current) => ({ ...current, mediaUrls: [] }));
       setFile(selectedFile);
       const url = URL.createObjectURL(selectedFile);
       setPreview(url);
@@ -79,20 +81,21 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   }, []);
 
   const handleClearMediaUrl = useCallback(() => {
-    setFormData((current) => ({ ...current, mediaUrl: '' }));
+    setFormData((current) => ({ ...current, mediaUrls: [] }));
+    setPreview(null);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasFile = Boolean(file);
-    const hasMediaUrl = formData.mediaUrl.trim().length > 0;
+    const hasMediaUrls = formData.mediaUrls.length > 0;
 
     if (!formData.title.trim()) {
       alert('请填写作品标题。');
       return;
     }
 
-    if ((hasFile && hasMediaUrl) || (!hasFile && !hasMediaUrl)) {
+    if ((hasFile && hasMediaUrls) || (!hasFile && !hasMediaUrls)) {
       alert('请在上传图片/视频与填写 mediaUrl 之间二选一。');
       return;
     }
@@ -104,7 +107,16 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       if (file) {
         body.append('file', file);
       }
-      Object.entries(formData).forEach(([key, value]) => body.append(key, value));
+      
+      // Append all fields except mediaUrls
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'mediaUrls') {
+          body.append(key, value as string);
+        }
+      });
+      
+      // Append each mediaUrl separately
+      formData.mediaUrls.forEach(url => body.append('mediaUrl', url));
 
       const response = await fetch('/api/contribute', { method: 'POST', body });
       const result = await response.json();
@@ -118,7 +130,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
           setSubmissionSuccess(null);
           setFile(null);
           setPreview(null);
-          setFormData({ title: '', description: '', prompt: '', tags: '', model: '', mediaUrl: '', sourceUrl: '' });
+          setFormData({ title: '', description: '', prompt: '', tags: '', model: '', mediaUrls: [], sourceUrl: '' });
           setSubmissionMode('upload');
         }, 4000);
       } else {
@@ -134,8 +146,8 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
 
   if (!isOpen) return null;
 
-  const hasMediaUrl = formData.mediaUrl.trim().length > 0;
-  const canSubmit = formData.title.trim().length > 0 && (Boolean(file) || hasMediaUrl) && !(Boolean(file) && hasMediaUrl);
+  const hasMediaUrls = formData.mediaUrls.length > 0;
+  const canSubmit = formData.title.trim().length > 0 && (Boolean(file) || hasMediaUrls) && !(Boolean(file) && hasMediaUrls);
 
   return (
     <div className="theme-overlay fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 backdrop-blur-xl animate-in fade-in duration-300">
@@ -143,7 +155,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         <ContributePreview 
           preview={preview}
           file={file}
-          mediaUrl={formData.mediaUrl}
+          mediaUrls={formData.mediaUrls}
           onClearFile={handleClearFile}
           onClearMediaUrl={handleClearMediaUrl}
           onFileChange={handleFileChange}
@@ -159,12 +171,28 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
             <ContributeSuccess prUrl={submitSuccess} />
           ) : (
             <ContributeForm 
-              formData={formData}
+              formData={{
+                ...formData,
+                mediaUrl: formData.mediaUrls.join(', ')
+              }}
               setFormData={(dataOrFn) => {
                 setFormData((prev) => {
-                  const next = typeof dataOrFn === 'function' ? dataOrFn(prev) : dataOrFn;
-                  if (submissionMode === 'mediaUrl' && next.mediaUrl !== prev.mediaUrl) {
-                    setPreview(next.mediaUrl);
+                  const nextRaw = typeof dataOrFn === 'function' ? dataOrFn({
+                    ...prev,
+                    mediaUrl: prev.mediaUrls.join(', ')
+                  }) : dataOrFn;
+                  
+                  const mediaUrls = nextRaw.mediaUrl ? nextRaw.mediaUrl.split(',').map((u: string) => u.trim()).filter(Boolean) : [];
+                  
+                  const next = {
+                    ...prev,
+                    ...nextRaw,
+                    mediaUrls
+                  } as typeof prev & { mediaUrl?: string };
+                  delete next.mediaUrl;
+
+                  if (submissionMode === 'mediaUrl' && next.mediaUrls[0] !== prev.mediaUrls[0]) {
+                    setPreview(next.mediaUrls[0] || null);
                   }
                   return next;
                 });

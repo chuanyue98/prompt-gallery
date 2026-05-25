@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { GalleryItem } from '@/types/gallery';
-import { getGalleryMediaUrl, getPrimaryMediaType, isVideoAsset } from '@/lib/gallery';
+import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 
 interface DetailModalProps {
   item: GalleryItem;
@@ -66,10 +66,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   isDeleting,
   deleteSuccess,
 }) => {
-  const mediaUrl = getGalleryMediaUrl(item, 'src');
-  const coverUrl = getGalleryMediaUrl(item, 'cover');
-  const primaryMediaType = getPrimaryMediaType(item);
-  const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(mediaUrl));
+  const [currentMediaIndex, setCurrentMediaIndex] = React.useState(0);
+  const currentMedia = item.media[currentMediaIndex] || item.media[0];
+  const mediaUrl = getGalleryMediaUrl(item, 'src', currentMediaIndex);
+  const coverUrl = getGalleryMediaUrl(item, 'cover', currentMediaIndex);
+  
+  const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
   const isCopied = copiedSlug === 'modal';
   const cleanedPrompt = item.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim();
   const likes = cleanedPrompt.length * 17;
@@ -82,6 +84,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     ['Words', String(promptWordCount)],
   ];
 
+  const hasMultipleMedia = item.media.length > 1;
+
+  const nextMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentMediaIndex((prev) => (prev + 1) % item.media.length);
+  };
+
+  const prevMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentMediaIndex((prev) => (prev - 1 + item.media.length) % item.media.length);
+  };
+
   return (
     <div className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -89,18 +103,46 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           <IconX />
         </button>
 
-        <div className="modal-media cursor-zoom-in" onClick={onLightboxOpen}>
+        <div className="modal-media group relative cursor-zoom-in" onClick={onLightboxOpen}>
           {mediaUrl ? (
             isVideo ? (
-              <video src={mediaUrl} className="h-full w-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
+              <video key={mediaUrl} src={mediaUrl} className="h-full w-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt={item.description || item.slug} />
+              <img key={mediaUrl} src={coverUrl} alt={item.description || item.slug} />
             )
           ) : (
             <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
               暂无媒体内容
             </div>
+          )}
+
+          {hasMultipleMedia && (
+            <>
+              <button
+                type="button"
+                onClick={prevMedia}
+                aria-label="Previous media"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100"
+              >
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={nextMedia}
+                aria-label="Next media"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100"
+              >
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] font-black text-white backdrop-blur-md">
+                {currentMediaIndex + 1} / {item.media.length}
+              </div>
+            </>
           )}
 
           <div data-testid="mobile-fullscreen-hint" className="modal-play">Fullscreen</div>

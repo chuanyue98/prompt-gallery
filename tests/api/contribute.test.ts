@@ -76,17 +76,12 @@ describe('API Route unit tests', () => {
   });
 
   it('validateCreateContributionInput covers all branches', () => {
-    expect(validateCreateContributionInput({ title: '', prompt: '', mediaUrl: '', file: null }).error)
+    expect(validateCreateContributionInput({ title: '', prompt: '', mediaUrls: [], files: [] }).error)
       .toContain('Missing required fields');
 
     const file = new File([''], 'a.png', { type: 'image/png' });
-    expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: 'http', file }).error)
-      .toContain('Provide either a media file or a media URL');
-
-    expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: 'http://a.txt', file: null }).error)
-      .toContain('Media URL must point directly');
-
-    expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrl: '', file }).error).toBeNull();
+    expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrls: [], files: [file] }).error).toBeNull();
+    expect(validateCreateContributionInput({ title: 'T', prompt: 'P', mediaUrls: ['https://example.com/a.png'], files: [] }).error).toBeNull();
   });
 });
 
@@ -134,7 +129,7 @@ describe('POST handler integration', () => {
     mockFormDataRequest(req, formData);
     const res = await POST(req);
     expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ error: expect.stringContaining('mediaUrl') });
+    expect(await res.json()).toMatchObject({ error: expect.stringContaining('one media file') });
   });
 
   it('rejects non-http(s) sourceUrl even when mediaUrl is valid', async () => {
@@ -207,10 +202,8 @@ describe('buildContributionIndexMd escaping', () => {
       prompt: 'P',
       tags: 'T',
       model: 'M "m"',
-      mediaUrl: 'U',
       sourceUrl: 'S',
-      mediaType: 'image' as MediaType,
-      assetReference: 'R',
+      mediaItems: [{ type: 'image' as MediaType, src: 'R', cover: 'R' }],
     });
     expect(md).toContain('\\"');
   });

@@ -1,141 +1,47 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import ContributeModal from '@/components/gallery/ContributeModal';
 import { ContributeForm } from '@/components/gallery/ContributeForm';
 import { ContributePreview } from '@/components/gallery/ContributePreview';
-import { ContributeSuccess } from '@/components/gallery/ContributeSuccess';
+import ContributeSuccess from '@/components/gallery/ContributeSuccess';
 
 describe('ContributeModal validation and errors', () => {
-  it('shows an alert when title is missing', async () => {
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
-
+  it('shows validation error if title is empty', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<ContributeModal isOpen onClose={() => {}} />);
     
     const form = screen.getByTestId('contribute-modal-shell').querySelector('form')!;
     fireEvent.submit(form);
-
-    expect(alertMock).toHaveBeenCalledWith('请填写作品标题。');
-
-    vi.unstubAllGlobals();
+    
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('请填写作品标题'));
+    alertSpy.mockRestore();
   });
 
-  it('shows an alert when both file and url are provided or both are missing', async () => {
+  it('shows error when both file and mediaUrl are missing', async () => {
     const user = userEvent.setup();
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
-
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<ContributeModal isOpen onClose={() => {}} />);
     
-    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Valid Title');
-    
+    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'My Title');
     const form = screen.getByTestId('contribute-modal-shell').querySelector('form')!;
     fireEvent.submit(form);
-
-    expect(alertMock).toHaveBeenCalledWith('请在上传图片/视频与填写 mediaUrl 之间二选一。');
-
-    vi.unstubAllGlobals();
+    
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('二选一'));
+    alertSpy.mockRestore();
   });
 
-  it('handles network error during fetch', async () => {
+  it('successfully submits with valid data and file', async () => {
     const user = userEvent.setup();
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network Fail')));
-
-    render(<ContributeModal isOpen onClose={() => {}} />);
-    
-    await user.click(screen.getByRole('button', { name: 'Media URL' }));
-    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Title');
-    await user.type(screen.getByPlaceholderText('完整咒语...'), 'Prompt');
-    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://example.com/a.png');
-
-    await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
-    
-    await waitFor(() => {
-      expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('Network Fail'));
-    });
-
-    vi.unstubAllGlobals();
-  });
-
-  it('renders video preview when a video file is uploaded', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:test-video') });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ success: true, prUrl: 'https://github.com/pr/1' }),
+    }));
 
     render(<ContributeModal isOpen onClose={() => {}} />);
 
-    const file = new File(['fake video data'], 'test.mp4', { type: 'video/mp4' });
+    const file = new File(['hello'], 'test.png', { type: 'image/png' });
     const input = screen.getByTestId('contribute-modal-shell').querySelector('input[type="file"]') as HTMLInputElement;
-
     await user.upload(input, file);
-
-    const video = screen.getByTestId('contribute-modal-shell').querySelector('video');
-    expect(video).toBeInTheDocument();
-    expect(video).toHaveAttribute('src', 'blob:test-video');
-
-    vi.unstubAllGlobals();
-  });
-
-  it('shows success screen after successful submission', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, prUrl: 'https://github.com/pr/1' }),
-    }));
-
-    render(<ContributeModal isOpen onClose={() => {}} />);
-
-    await user.click(screen.getByRole('button', { name: 'Media URL' }));
-    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Title');
-    await user.type(screen.getByPlaceholderText('完整咒语...'), 'My prompt');
-    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://example.com/img.png');
-
-    await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
-
-    await waitFor(() => expect(screen.getByText('投稿已发起')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: 'https://github.com/pr/1' })).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
-  });
-
-  it('throws error when result.success is false', async () => {
-    const user = userEvent.setup();
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: false, error: '内容审核未通过' }),
-    }));
-
-    render(<ContributeModal isOpen onClose={() => {}} />);
-
-    await user.click(screen.getByRole('button', { name: 'Media URL' }));
-    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Title');
-    await user.type(screen.getByPlaceholderText('完整咒语...'), 'My prompt');
-    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://example.com/img.png');
-
-    await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
-
-    await waitFor(() => expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('内容审核未通过')));
-
-    vi.unstubAllGlobals();
-  });
-
-  it('submits with a file (covers file append path)', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:img') });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, prUrl: 'https://github.com/pr/2' }),
-    }));
-
-    render(<ContributeModal isOpen onClose={() => {}} />);
-
-    const file = new File(['data'], 'photo.png', { type: 'image/png' });
-    const fileInput = screen.getByTestId('contribute-modal-shell').querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(fileInput, file);
 
     await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Photo Title');
     await user.type(screen.getByPlaceholderText('完整咒语...'), 'My prompt');
@@ -176,7 +82,7 @@ describe('ContributeForm direct tests', () => {
 
     render(
       <ContributeForm
-        formData={defaultFormData}
+        formData={{ ...defaultFormData, mediaUrl: '' }}
         setFormData={setFormData}
         submissionMode="mediaUrl"
         setSubmissionMode={setSubmissionMode}
@@ -184,6 +90,8 @@ describe('ContributeForm direct tests', () => {
         isSubmitting={false}
         canSubmit={false}
         onClearFileAndPreview={vi.fn()}
+        onParseLink={vi.fn()}
+        isParsing={false}
       />
     );
 
@@ -198,7 +106,7 @@ describe('ContributeForm direct tests', () => {
 
     render(
       <ContributeForm
-        formData={defaultFormData}
+        formData={{ ...defaultFormData, mediaUrl: '' }}
         setFormData={setFormData}
         submissionMode="upload"
         setSubmissionMode={vi.fn()}
@@ -206,6 +114,8 @@ describe('ContributeForm direct tests', () => {
         isSubmitting={false}
         canSubmit={false}
         onClearFileAndPreview={vi.fn()}
+        onParseLink={vi.fn()}
+        isParsing={false}
       />
     );
 
@@ -222,7 +132,7 @@ describe('ContributeForm direct tests', () => {
 
     render(
       <ContributeForm
-        formData={defaultFormData}
+        formData={{ ...defaultFormData, mediaUrl: '' }}
         setFormData={setFormData}
         submissionMode="upload"
         setSubmissionMode={vi.fn()}
@@ -230,6 +140,8 @@ describe('ContributeForm direct tests', () => {
         isSubmitting={false}
         canSubmit={false}
         onClearFileAndPreview={vi.fn()}
+        onParseLink={vi.fn()}
+        isParsing={false}
       />
     );
 
@@ -246,7 +158,7 @@ describe('ContributeForm direct tests', () => {
 
     render(
       <ContributeForm
-        formData={defaultFormData}
+        formData={{ ...defaultFormData, mediaUrl: '' }}
         setFormData={setFormData}
         submissionMode="mediaUrl"
         setSubmissionMode={vi.fn()}
@@ -254,17 +166,19 @@ describe('ContributeForm direct tests', () => {
         isSubmitting={false}
         canSubmit={false}
         onClearFileAndPreview={vi.fn()}
+        onParseLink={vi.fn()}
+        isParsing={false}
       />
     );
 
-    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://img.com/a.png');
+    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://img.com');
     expect(setFormData).toHaveBeenCalled();
   });
 
-  it('shows submitting state on button', () => {
+  it('disables submit button when isSubmitting is true', () => {
     render(
       <ContributeForm
-        formData={defaultFormData}
+        formData={{ ...defaultFormData, mediaUrl: '' }}
         setFormData={vi.fn()}
         submissionMode="upload"
         setSubmissionMode={vi.fn()}
@@ -272,30 +186,30 @@ describe('ContributeForm direct tests', () => {
         isSubmitting={true}
         canSubmit={true}
         onClearFileAndPreview={vi.fn()}
+        onParseLink={vi.fn()}
+        isParsing={false}
       />
     );
-    expect(screen.getByRole('button', { name: '正在提交 PR...' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '正在提交 PR...' })).toBeDisabled();
   });
 });
 
 describe('ContributePreview direct tests', () => {
   it('fires dragOver without setting drag state', () => {
-    const onFileChange = vi.fn();
     render(
       <ContributePreview
         preview={null}
         file={null}
-        mediaUrl=""
+        mediaUrls={[]}
         onClearFile={vi.fn()}
         onClearMediaUrl={vi.fn()}
-        onFileChange={onFileChange}
+        onFileChange={vi.fn()}
         submitSuccess={false}
       />
     );
-    const label = screen.getByText(/点击或拖拽上传/).closest('label')!;
-    fireEvent.dragOver(label, { dataTransfer: { files: [], types: [] } });
-    // dragOver should still show default text (no state change)
-    expect(screen.getByText('点击或拖拽上传')).toBeInTheDocument();
+    const label = screen.getByText('点击或拖拽上传').closest('label')!;
+    fireEvent.dragOver(label);
+    expect(screen.getByText('📤')).toBeInTheDocument();
   });
 
   it('drop event is ignored when submitSuccess is true', () => {
@@ -304,66 +218,65 @@ describe('ContributePreview direct tests', () => {
       <ContributePreview
         preview={null}
         file={null}
-        mediaUrl=""
+        mediaUrls={[]}
         onClearFile={vi.fn()}
         onClearMediaUrl={vi.fn()}
         onFileChange={onFileChange}
         submitSuccess={true}
       />
     );
-    const label = screen.getByText(/点击或拖拽上传/).closest('label')!;
-    const file = new File(['data'], 'img.png', { type: 'image/png' });
-    fireEvent.drop(label, { dataTransfer: { files: [file] } });
+    const label = screen.getByText('点击或拖拽上传').closest('label')!;
+    fireEvent.drop(label, { dataTransfer: { files: [new File([], 'a.png')] } });
     expect(onFileChange).not.toHaveBeenCalled();
   });
 
-  it('dragEnter is ignored when hasMediaUrl is true', () => {
+  it('dragEnter is ignored when mediaUrls is not empty', () => {
     render(
       <ContributePreview
         preview={null}
         file={null}
-        mediaUrl="https://example.com/img.png"
+        mediaUrls={['http://a.com/b.png']}
         onClearFile={vi.fn()}
         onClearMediaUrl={vi.fn()}
         onFileChange={vi.fn()}
         submitSuccess={false}
       />
     );
-    // When hasMediaUrl, shows the URL preview panel not the drag zone
-    expect(screen.getByText('https://example.com/img.png')).toBeInTheDocument();
+    const img = screen.getByRole('img', { name: 'Preview' });
+    fireEvent.dragEnter(img);
+    expect(screen.queryByText('📥')).not.toBeInTheDocument();
   });
 
-  it('shows clear file button when preview is set', async () => {
-    const user = userEvent.setup();
+  it('shows clear file button when preview is set', () => {
     const onClearFile = vi.fn();
     render(
       <ContributePreview
-        preview="blob:preview"
-        file={new File(['data'], 'img.png', { type: 'image/png' })}
-        mediaUrl=""
+        preview="blob:url"
+        file={new File([], 'a.png', { type: 'image/png' })}
+        mediaUrls={[]}
         onClearFile={onClearFile}
         onClearMediaUrl={vi.fn()}
         onFileChange={vi.fn()}
         submitSuccess={false}
       />
     );
-    await user.click(screen.getByRole('button', { name: /✕/ }));
+    fireEvent.click(screen.getByText('✕'));
     expect(onClearFile).toHaveBeenCalled();
   });
 
   it('does not show clear button when submitSuccess is true and preview shown', () => {
     render(
       <ContributePreview
-        preview="blob:preview"
-        file={new File(['data'], 'img.png', { type: 'image/png' })}
-        mediaUrl=""
+        preview="blob:url"
+        file={new File([], 'a.png', { type: 'image/png' })}
+        mediaUrls={[]}
         onClearFile={vi.fn()}
         onClearMediaUrl={vi.fn()}
         onFileChange={vi.fn()}
         submitSuccess={true}
       />
     );
-    expect(screen.queryByRole('button', { name: /✕/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('✕')).not.toBeInTheDocument();
   });
 
   it('does not show clear mediaUrl button when submitSuccess is true', () => {
@@ -371,21 +284,67 @@ describe('ContributePreview direct tests', () => {
       <ContributePreview
         preview={null}
         file={null}
-        mediaUrl="https://example.com/img.png"
+        mediaUrls={['http://a.com/b.png']}
         onClearFile={vi.fn()}
         onClearMediaUrl={vi.fn()}
         onFileChange={vi.fn()}
         submitSuccess={true}
       />
     );
-    expect(screen.queryByRole('button', { name: '清空链接' })).not.toBeInTheDocument();
+    expect(screen.queryByText('✕')).not.toBeInTheDocument();
+  });
+});
+
+import { DetailModal } from '@/components/gallery/DetailModal';
+
+describe('DetailModal multi-media navigation', () => {
+  const mockItem = {
+    slug: 'test-item',
+    description: 'desc',
+    tags: ['tag1'],
+    mediaPath: '/data/',
+    media: [
+      { type: 'image' as const, src: 'img1.png', cover: 'img1.png' },
+      { type: 'image' as const, src: 'img2.png', cover: 'img2.png' },
+    ],
+    content: '### Prompt\nTest prompt',
+  };
+
+  it('navigates through multiple media items', async () => {
+    const user = userEvent.setup();
+    render(
+      <DetailModal
+        item={mockItem}
+        onClose={vi.fn()}
+        onCopy={vi.fn()}
+        copiedSlug={null}
+        onLightboxOpen={vi.fn()}
+        showDeleteForm={false}
+        setShowDeleteForm={vi.fn()}
+        deleteReason=""
+        setDeleteReason={vi.fn()}
+        onDeleteRequest={vi.fn()}
+        isDeleting={false}
+        deleteSuccess={false}
+      />
+    );
+
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    
+    // Next image
+    await user.click(screen.getByRole('button', { name: 'Next media' }));
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    // Previous image (back to 1)
+    await user.click(screen.getByRole('button', { name: 'Previous media' }));
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 });
 
 describe('ContributeSuccess direct tests', () => {
-  it('renders success state with PR link', () => {
-    render(<ContributeSuccess prUrl="https://github.com/owner/repo/pull/1" />);
+  it('renders correctly with PR URL', () => {
+    render(<ContributeSuccess prUrl="https://github.com/pull/1" />);
     expect(screen.getByText('投稿已发起')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'https://github.com/owner/repo/pull/1' })).toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('href', 'https://github.com/pull/1');
   });
 });

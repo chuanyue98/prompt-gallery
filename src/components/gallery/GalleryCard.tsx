@@ -73,6 +73,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
         ) : null}
 
         {isVideo ? <div className="video-badge">Motion</div> : null}
+        {!isVideo && item.media.length > 1 ? <div className="video-badge">{item.media.length} Photos</div> : null}
 
         <div className="card-overlay">
           <div className="card-overlay-top">
