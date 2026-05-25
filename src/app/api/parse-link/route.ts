@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const ALLOWED_DOMAINS = ['x.com', 'twitter.com', 'fxtwitter.com', 'pbs.twimg.com'];
+
 export async function POST(req: NextRequest) {
   try {
     const { url } = await req.json();
@@ -8,11 +10,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'URL is required' }, { status: 400 });
     }
 
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid URL format' }, { status: 400 });
+    }
+
+    if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname.replace('www.', ''))) {
+      return NextResponse.json({ success: false, error: 'Domain not allowed' }, { status: 403 });
+    }
+
     let targetUrl = url;
     let isX = false;
 
-    if (url.includes('x.com') || url.includes('twitter.com')) {
-      targetUrl = url.replace(/https:\/\/(x|twitter)\.com/, 'https://fxtwitter.com');
+    if (parsedUrl.hostname.includes('x.com') || parsedUrl.hostname.includes('twitter.com')) {
+      targetUrl = url.replace(/https?:\/\/(www\.)?(x|twitter)\.com/, 'https://fxtwitter.com');
       isX = true;
     }
 
@@ -23,32 +36,21 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
+      throw new Error(`Fetch failed: ${response.statusText}`);
     }
 
     const html = await response.text();
 
     const metadata = {
-      title: '',
-      description: '',
-      image: '',
-      video: '',
+      title: getMetaContent(html, 'og:title'),
+      description: getMetaContent(html, 'og:description'),
+      image: getMetaContent(html, 'og:image'),
+      video: getMetaContent(html, 'og:video'),
       prompt: ''
     };
 
-    const titleMatch = html.match(/<meta property="og:title" content="(.*?)"/);
-    const descMatch = html.match(/<meta property="og:description" content="(.*?)"/);
-    const imageMatch = html.match(/<meta property="og:image" content="(.*?)"/);
-    const videoMatch = html.match(/<meta property="og:video" content="(.*?)"/);
-
-    metadata.title = titleMatch ? decodeHtmlEntities(titleMatch[1]) : '';
-    metadata.description = descMatch ? decodeHtmlEntities(descMatch[1]) : '';
-    metadata.image = imageMatch ? imageMatch[1] : '';
-    metadata.video = videoMatch ? videoMatch[1] : '';
-
     if (isX) {
       // For X, the description often contains the prompt. 
-      // Try to extract text after "提示词" or "Prompt"
       const promptMatch = metadata.description.match(/(提示词|Prompt|咒语)[:：\s]+([\s\S]+)/i);
       if (promptMatch) {
         metadata.prompt = promptMatch[2].trim();
@@ -56,7 +58,6 @@ export async function POST(req: NextRequest) {
         metadata.prompt = metadata.description;
       }
       
-      // Clean up title (often "User (@username)")
       if (metadata.title.includes('(@')) {
         metadata.title = metadata.title.split('(@')[0].trim();
       }
@@ -64,9 +65,23 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, metadata });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    console.error('Parse Link Error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to parse link' }, { status: 500 });
   }
+}
+
+function getMetaContent(html: string, property: string): string {
+  // A bit more robust than simple regex, handles property or name
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^"]+)"`, 'i'),
+    new RegExp(`<meta[^>]+content="([^"]+)"[^>]+(?:property|name)="${property}"`, 'i')
+  ];
+  
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) return decodeHtmlEntities(match[1]);
+  }
+  return '';
 }
 
 function decodeHtmlEntities(text: string) {
@@ -76,6 +91,6 @@ function decodeHtmlEntities(text: string) {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&#39;/g, "'")
-    .replace(/<br>/g, '\n')
-    .replace(/<br\s*\/?>/g, '\n');
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<br\s*\/?>/gi, '\n');
 }

@@ -33,7 +33,7 @@ describe('POST /api/parse-link', () => {
 
     const req = new NextRequest('http://localhost/api/parse-link', {
       method: 'POST',
-      body: JSON.stringify({ url: 'https://x.com/MrLarus/status/123' }),
+      body: JSON.stringify({ url: 'https://twitter.com/MrLarus/status/123' }),
     });
 
     const res = await POST(req);
@@ -54,7 +54,20 @@ describe('POST /api/parse-link', () => {
     );
   });
 
-  it('should handle fetch errors', async () => {
+  it('should block non-allowed domains', async () => {
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://malicious.com' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBe('Domain not allowed');
+  });
+
+  it('should handle fetch errors gracefully with generic message', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       statusText: 'Not Found',
@@ -62,13 +75,13 @@ describe('POST /api/parse-link', () => {
 
     const req = new NextRequest('http://localhost/api/parse-link', {
       method: 'POST',
-      body: JSON.stringify({ url: 'https://example.com' }),
+      body: JSON.stringify({ url: 'https://x.com/valid-but-missing' }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(500);
     const data = await res.json();
     expect(data.success).toBe(false);
-    expect(data.error).toContain('Failed to fetch URL');
+    expect(data.error).toBe('Failed to parse link');
   });
 });

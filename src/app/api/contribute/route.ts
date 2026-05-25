@@ -135,12 +135,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 async function downloadMedia(url: string): Promise<{ fileBase64: string; fileName: string }> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch media from URL: ${response.statusText}`);
   }
+
+  const contentLength = response.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > MAX_FILE_SIZE) {
+    throw new Error('File size exceeds 10MB limit');
+  }
+
   const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > MAX_FILE_SIZE) {
+    throw new Error('File size exceeds 10MB limit');
+  }
+
   const fileBase64 = Buffer.from(buffer).toString('base64');
   
   // Try to get filename from URL or content-type
@@ -152,7 +164,9 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
   } else {
     const contentType = response.headers.get('content-type');
     if (contentType) {
-      const ext = contentType.split('/').pop();
+      // Split by ; to handle "image/jpeg; charset=utf-8"
+      const typePart = contentType.split(';')[0].trim();
+      const ext = typePart.split('/').pop();
       if (ext) fileName = `media-file.${ext}`;
     }
   }
