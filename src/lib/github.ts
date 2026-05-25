@@ -73,30 +73,57 @@ export async function createContributionPullRequest(
   });
 
   const targetDir = primaryMediaType === 'video' ? 'videos' : 'images';
+  const basePath = `public/data/${targetDir}/${slug}`;
 
-  // 3. Commit index.md
-  await octokit.rest.repos.createOrUpdateFileContents({
+  // 3. Create Blobs for all files
+  const treeItems: { path: string; mode: '100644'; type: 'blob'; sha: string }[] = [];
+
+  // Index.md blob
+  const { data: indexBlob } = await octokit.rest.git.createBlob({
     owner: REPO_OWNER,
     repo: REPO_NAME,
-    path: `public/data/${targetDir}/${slug}/index.md`,
-    message: `Add prompt: ${title}`,
     content: Buffer.from(indexMd).toString('base64'),
-    branch: branchName,
+    encoding: 'base64',
   });
+  treeItems.push({ path: `${basePath}/index.md`, mode: '100644', type: 'blob', sha: indexBlob.sha });
 
-  // 4. Commit all media files
+  // Media blobs
   for (const file of files) {
-    await octokit.rest.repos.createOrUpdateFileContents({
+    const { data: mediaBlob } = await octokit.rest.git.createBlob({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `public/data/${targetDir}/${slug}/${file.fileName}`,
-      message: `Add media for: ${title}`,
       content: file.fileBase64,
-      branch: branchName,
+      encoding: 'base64',
     });
+    treeItems.push({ path: `${basePath}/${file.fileName}`, mode: '100644', type: 'blob', sha: mediaBlob.sha });
   }
 
-  // 5. Open PR
+  // 4. Create Tree
+  const { data: tree } = await octokit.rest.git.createTree({
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
+    base_tree: mainSha,
+    tree: treeItems,
+  });
+
+  // 5. Create Commit
+  const { data: commit } = await octokit.rest.git.createCommit({
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
+    message: `Add contribution: ${title}`,
+    tree: tree.sha,
+    parents: [mainSha],
+  });
+
+  // 6. Update Branch Ref
+  await octokit.rest.git.updateRef({
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
+    ref: `heads/${branchName}`,
+    sha: commit.sha,
+  });
+
+  // 7. Open PR
   const { data: pr } = await octokit.rest.pulls.create({
     owner: REPO_OWNER,
     repo: REPO_NAME,

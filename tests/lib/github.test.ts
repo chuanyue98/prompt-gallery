@@ -19,6 +19,8 @@ const mockOctokit = {
       createTree: vi.fn(),
       createCommit: vi.fn(),
       createRef: vi.fn(),
+      createBlob: vi.fn(),
+      updateRef: vi.fn(),
     },
     repos: {
       createOrUpdateFileContents: vi.fn(),
@@ -68,7 +70,9 @@ describe('lib/github', () => {
   describe('createContributionPullRequest', () => {
     it('creates a PR for video type with empty optional fields', async () => {
       mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
-      mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
+      mockOctokit.rest.git.createBlob.mockResolvedValue({ data: { sha: 'blob-sha' } });
+      mockOctokit.rest.git.createTree.mockResolvedValue({ data: { sha: 'tree-sha' } });
+      mockOctokit.rest.git.createCommit.mockResolvedValue({ data: { sha: 'commit-sha' } });
       mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'pr-url' } });
 
       // @ts-expect-error - mockOctokit is not a full Octokit instance
@@ -87,14 +91,19 @@ describe('lib/github', () => {
       );
 
       expect(result.html_url).toBe('pr-url');
-      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledWith(
-        expect.objectContaining({ path: expect.stringContaining('videos/') })
+      expect(mockOctokit.rest.git.createBlob).toHaveBeenCalled();
+      expect(mockOctokit.rest.git.createTree).toHaveBeenCalledWith(
+        expect.objectContaining({ tree: expect.arrayContaining([
+          expect.objectContaining({ path: expect.stringContaining('videos/') })
+        ])})
       );
     });
 
     it('successfully creates a PR with index.md and media file', async () => {
       mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
-      mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
+      mockOctokit.rest.git.createBlob.mockResolvedValue({ data: { sha: 'blob-sha' } });
+      mockOctokit.rest.git.createTree.mockResolvedValue({ data: { sha: 'tree-sha' } });
+      mockOctokit.rest.git.createCommit.mockResolvedValue({ data: { sha: 'commit-sha' } });
       mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'pr-url' } });
 
       // @ts-expect-error - mockOctokit is not a full Octokit instance
@@ -114,12 +123,17 @@ describe('lib/github', () => {
 
       expect(result.html_url).toBe('pr-url');
       expect(mockOctokit.rest.git.createRef).toHaveBeenCalled();
-      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(2);
+      expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(2);
+      expect(mockOctokit.rest.git.createTree).toHaveBeenCalled();
+      expect(mockOctokit.rest.git.createCommit).toHaveBeenCalled();
+      expect(mockOctokit.rest.git.updateRef).toHaveBeenCalled();
     });
 
     it('successfully creates a PR with only index.md (mediaUrl mode)', async () => {
       mockOctokit.rest.git.getRef.mockResolvedValue({ data: { object: { sha: 'main-sha' } } });
-      mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({});
+      mockOctokit.rest.git.createBlob.mockResolvedValue({ data: { sha: 'blob-sha' } });
+      mockOctokit.rest.git.createTree.mockResolvedValue({ data: { sha: 'tree-sha' } });
+      mockOctokit.rest.git.createCommit.mockResolvedValue({ data: { sha: 'commit-sha' } });
       mockOctokit.rest.pulls.create.mockResolvedValue({ data: { html_url: 'pr-url' } });
 
       // @ts-expect-error - mockOctokit is not a full Octokit instance
@@ -138,7 +152,7 @@ describe('lib/github', () => {
       );
 
       expect(result.html_url).toBe('pr-url');
-      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(2);
+      expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(2);
     });
 
     it('handles unexpected errors in createContributionPullRequest', async () => {

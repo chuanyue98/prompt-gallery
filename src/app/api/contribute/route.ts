@@ -92,8 +92,8 @@ export function buildContributionIndexMd(input: {
   const mediaSection = input.mediaItems
     .map(
       (m) => `  - type: "${m.type}"
-    src: "${m.src}"
-    cover: "${m.cover}"`
+    src: "${m.src.replace(/"/g, '\\"')}"
+    cover: "${m.cover.replace(/"/g, '\\"')}"`
     )
     .join('\n');
 
@@ -102,7 +102,7 @@ title: "${input.title.replace(/"/g, '\\"')}"
 description: "${input.description.replace(/"/g, '\\"')}"
 tags: [${normalizedTags}]
 model: "${input.model.replace(/"/g, '\\"')}"
-${input.sourceUrl ? `sourceUrl: "${input.sourceUrl}"\n` : ''}media:
+${input.sourceUrl ? `sourceUrl: "${input.sourceUrl.replace(/"/g, '\\"')}"\n` : ''}media:
 ${mediaSection}
 ---
 
@@ -219,14 +219,25 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     committedFiles.push({ fileName: file.name, fileBase64 });
     mediaItems.push({ type, src: file.name, cover: file.name });
   }
+// Handle media URLs (download and persist)
+let urlIdx = 0;
+for (const url of mediaUrls) {
+  try {
+    const downloaded = await downloadMedia(url);
+    const type = inferMediaTypeFromUrl(url) || 'image';
 
-  for (const url of mediaUrls) {
-    try {
-      const downloaded = await downloadMedia(url);
-      const type = inferMediaTypeFromUrl(url) || 'image';
-      committedFiles.push({ fileName: downloaded.fileName, fileBase64: downloaded.fileBase64 });
-      mediaItems.push({ type, src: downloaded.fileName, cover: downloaded.fileName });
-    } catch (error: unknown) {
+    // Ensure unique filename for downloads
+    let finalFileName = downloaded.fileName;
+    if (committedFiles.some(f => f.fileName === finalFileName)) {
+      const parts = finalFileName.split('.');
+      const ext = parts.pop();
+      finalFileName = `${parts.join('.')}-${urlIdx++}.${ext}`;
+    }
+
+    committedFiles.push({ fileName: finalFileName, fileBase64: downloaded.fileBase64 });
+    mediaItems.push({ type, src: finalFileName, cover: finalFileName });
+  } catch (error: unknown) {
+
       const message = error instanceof Error ? error.message : 'Media download failed';
       return NextResponse.json({ error: `无法下载媒体文件: ${message}` }, { status: 500 });
     }
