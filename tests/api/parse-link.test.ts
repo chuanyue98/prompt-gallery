@@ -29,7 +29,7 @@ describe('POST /api/parse-link', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       text: () => Promise.resolve(mockHtml),
-    } as any);
+    } as unknown as Response);
 
     const req = new NextRequest('http://localhost/api/parse-link', {
       method: 'POST',
@@ -58,7 +58,7 @@ describe('POST /api/parse-link', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       statusText: 'Not Found',
-    } as any);
+    } as unknown as Response);
 
     const req = new NextRequest('http://localhost/api/parse-link', {
       method: 'POST',

@@ -308,7 +308,6 @@ describe('GalleryCard direct tests', () => {
   });
 
   it('selects item on Enter keydown', () => {
-    const user = userEvent.setup();
     render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: 'Enter' });

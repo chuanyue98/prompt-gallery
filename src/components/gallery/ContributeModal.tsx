@@ -54,8 +54,9 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       } else {
         throw new Error(result.error || '解析失败');
       }
-    } catch (error: any) {
-      alert('❌ 解析失败：' + error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '解析失败';
+      alert('❌ 解析失败：' + message);
     } finally {
       setIsParsing(false);
     }

@@ -208,11 +208,12 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
       const downloaded = await downloadMedia(mediaUrl);
       fileName = downloaded.fileName;
       fileBase64 = downloaded.fileBase64;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error during media download';
       console.error('Failed to download media:', error);
       // Fallback: if download fails, we could either error out or continue with just the URL
       // Given user's request, erroring out is safer to ensure persistence.
-      return NextResponse.json({ error: `无法下载媒体文件进行本地保存: ${error.message}` }, { status: 500 });
+      return NextResponse.json({ error: `无法下载媒体文件进行本地保存: ${message}` }, { status: 500 });
     }
   }
 

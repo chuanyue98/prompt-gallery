@@ -154,12 +154,15 @@ describe('ContributeModal validation and errors', () => {
     await user.click(screen.getByRole('button', { name: 'Media URL' }));
     await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://example.com/img.png');
 
-    // Preview panel now shows media URL
-    await waitFor(() => expect(screen.getByText('https://example.com/img.png')).toBeInTheDocument());
+    // Preview panel now shows image with src
+    await waitFor(() => {
+      const img = screen.getByRole('img', { name: 'Preview' });
+      expect(img).toHaveAttribute('src', 'https://example.com/img.png');
+    });
 
-    await user.click(screen.getByRole('button', { name: '清空链接' }));
+    await user.click(screen.getByRole('button', { name: '✕' }));
 
-    await waitFor(() => expect(screen.queryByText('https://example.com/img.png')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('img', { name: 'Preview' })).not.toBeInTheDocument());
   });
 });
 
@@ -233,7 +236,7 @@ describe('ContributeForm direct tests', () => {
     await user.type(screen.getByPlaceholderText('补充画面风格、主体或用途，帮助区分作品。'), 'Desc');
     expect(setFormData).toHaveBeenCalled();
 
-    await user.type(screen.getByPlaceholderText('https://example.com/original-post'), 'https://src.com');
+    await user.type(screen.getByPlaceholderText('https://x.com/original-post'), 'https://src.com');
     expect(setFormData).toHaveBeenCalled();
   });
 
