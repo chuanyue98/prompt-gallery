@@ -21,8 +21,12 @@ describe('POST /api/parse-link', () => {
         <head>
           <meta property="og:title" content="Larus Canus (@MrLarus)" />
           <meta property="og:description" content="Some intro here. 提示词：Test prompt here" />
-          <meta property="og:image" content="https://pbs.twimg.com/media/test.jpg" />
+          <meta property="og:image" content="https://mosaic.fxtwitter.com/jpeg/123/abc/def" />
         </head>
+        <body>
+          <img src="https://pbs.fxtwitter.com/media/img1.jpg" />
+          <img src="https://pbs.fxtwitter.com/media/img2.jpg" />
+        </body>
       </html>
     `;
 
@@ -42,7 +46,10 @@ describe('POST /api/parse-link', () => {
     expect(data.success).toBe(true);
     expect(data.metadata.title).toBe('Larus Canus');
     expect(data.metadata.prompt).toBe('Test prompt here');
-    expect(data.metadata.image).toBe('https://pbs.twimg.com/media/test.jpg');
+    // Should prefer first individual image over mosaic
+    expect(data.metadata.image).toBe('https://pbs.fxtwitter.com/media/img1.jpg?name=orig');
+    expect(data.metadata.images).toContain('https://pbs.fxtwitter.com/media/img1.jpg?name=orig');
+    expect(data.metadata.images).toContain('https://pbs.fxtwitter.com/media/img2.jpg?name=orig');
     
     expect(global.fetch).toHaveBeenCalledWith(
       'https://fxtwitter.com/MrLarus/status/123',

@@ -9,22 +9,6 @@ import {
 } from '@/lib/github';
 import { randomHex5 } from '@/lib/utils';
 
-interface CreateContributionInput {
-  title: string;
-  description: string;
-  prompt: string;
-  tags: string;
-  model: string;
-  mediaUrl: string;
-  sourceUrl: string;
-  file: File | null;
-}
-
-interface ValidationResult {
-  error: string | null;
-  mediaType: MediaType | null;
-}
-
 export function isHttpOrHttpsUrl(value: string) {
   try {
     const parsed = new URL(value);
@@ -52,24 +36,34 @@ export function buildContributionSlug(input: {
   return `${base}-${randomSuffix}`;
 }
 
-
 function inferMediaTypeFromFile(file: File): MediaType {
   return file.type.startsWith('video') ? 'video' : 'image';
 }
 
-export function validateCreateContributionInput(input: Pick<CreateContributionInput, 'title' | 'prompt' | 'mediaUrl' | 'file'>): ValidationResult {
+export function validateCreateContributionInput(input: {
+  title: string;
+  prompt: string;
+  mediaUrls: string[];
+  files: File[];
+}): { error: string | null; mediaType: MediaType | null } {
   if (!input.title.trim() || !input.prompt.trim()) {
     return { error: 'Missing required fields: title and prompt are mandatory', mediaType: null };
   }
 
-  if ((!input.file && !input.mediaUrl) || (input.file && input.mediaUrl)) {
-    return { error: 'Provide either a media file or a media URL', mediaType: null };
+  const hasMedia = input.files.length > 0 || input.mediaUrls.length > 0;
+  if (!hasMedia) {
+    return { error: 'Provide at least one media file or media URL', mediaType: null };
   }
 
-  const mediaType = input.file ? inferMediaTypeFromFile(input.file) : inferMediaTypeFromUrl(input.mediaUrl);
+  let mediaType: MediaType | null = null;
+  if (input.files.length > 0) {
+    mediaType = inferMediaTypeFromFile(input.files[0]);
+  } else if (input.mediaUrls.length > 0) {
+    mediaType = inferMediaTypeFromUrl(input.mediaUrls[0]);
+  }
 
   if (!mediaType) {
-    return { error: 'Media URL must point directly to an image or video file', mediaType: null };
+    return { error: 'Media must be an image or video file', mediaType: null };
   }
 
   return { error: null, mediaType };
@@ -88,24 +82,28 @@ export function buildContributionIndexMd(input: {
   prompt: string;
   tags: string;
   model: string;
-  mediaUrl: string;
   sourceUrl: string;
-  mediaType: MediaType;
-  assetReference: string;
+  mediaItems: { type: MediaType; src: string; cover: string }[];
 }): string {
   const normalizedTags = normalizeTagList(input.tags)
     .map((tag) => `"${tag}"`)
     .join(', ');
+
+  const mediaSection = input.mediaItems
+    .map(
+      (m) => `  - type: "${m.type}"
+    src: "${m.src}"
+    cover: "${m.cover}"`
+    )
+    .join('\n');
 
   return `---
 title: "${input.title.replace(/"/g, '\\"')}"
 description: "${input.description.replace(/"/g, '\\"')}"
 tags: [${normalizedTags}]
 model: "${input.model.replace(/"/g, '\\"')}"
-${input.mediaUrl ? `mediaUrl: "${input.mediaUrl}"\n` : ''}${input.sourceUrl ? `sourceUrl: "${input.sourceUrl}"\n` : ''}media:
-  - type: "${input.mediaType}"
-    src: "${input.assetReference}"
-    cover: "${input.assetReference}"
+${input.sourceUrl ? `sourceUrl: "${input.sourceUrl}"\n` : ''}media:
+${mediaSection}
 ---
 
 ### 提示词 (Prompt)
@@ -155,7 +153,6 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
 
   const fileBase64 = Buffer.from(buffer).toString('base64');
   
-  // Try to get filename from URL or content-type
   let fileName = 'media-file';
   const urlPath = new URL(url).pathname;
   const lastPart = urlPath.split('/').pop();
@@ -164,7 +161,6 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
   } else {
     const contentType = response.headers.get('content-type');
     if (contentType) {
-      // Split by ; to handle "image/jpeg; charset=utf-8"
       const typePart = contentType.split(';')[0].trim();
       const ext = typePart.split('/').pop();
       if (ext) fileName = `media-file.${ext}`;
@@ -181,58 +177,60 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
   const prompt = (formData.get('prompt') as string) || '';
   const tags = (formData.get('tags') as string) || '';
   const model = (formData.get('model') as string) || '';
-  const uploadedFile = formData.get('file');
-  const file = (uploadedFile && typeof uploadedFile === 'object' && 'size' in uploadedFile && (uploadedFile as { size: number }).size > 0) ? (uploadedFile as unknown as File) : null;
-  const mediaUrlVal = formData.get('mediaUrl');
-  let mediaUrl = '';
-  if (typeof mediaUrlVal === 'string') {
-    if (mediaUrlVal.trim().length > 0) {
-      mediaUrl = mediaUrlVal.trim();
-    }
-  }
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
 
-  if (mediaUrl && !isHttpOrHttpsUrl(mediaUrl)) {
-    return NextResponse.json({ error: 'mediaUrl 只能使用 http 或 https 协议' }, { status: 400 });
-  }
+  const files: File[] = [];
+  formData.getAll('file').forEach((uploadedFile) => {
+    if (uploadedFile && typeof uploadedFile === 'object' && 'size' in uploadedFile && (uploadedFile as { size: number }).size > 0) {
+      files.push(uploadedFile as unknown as File);
+    }
+  });
+
+  const mediaUrls: string[] = [];
+  formData.getAll('mediaUrl').forEach((val) => {
+    if (typeof val === 'string' && val.trim().length > 0) {
+      const url = val.trim();
+      if (isHttpOrHttpsUrl(url)) {
+        mediaUrls.push(url);
+      }
+    }
+  });
 
   if (sourceUrl && !isHttpOrHttpsUrl(sourceUrl)) {
     return NextResponse.json({ error: 'sourceUrl 只能使用 http 或 https 协议' }, { status: 400 });
   }
 
-  const validation = validateCreateContributionInput({ title, prompt, mediaUrl, file });
+  const validation = validateCreateContributionInput({ title, prompt, mediaUrls, files });
 
   if (validation.error || !validation.mediaType) {
     return NextResponse.json({ error: validation.error || 'Validation failed' }, { status: 400 });
   }
 
   const slug = buildContributionSlug({ title });
-  const mediaType = validation.mediaType;
-  
-  let fileName = '';
-  let fileBase64: string | null = null;
+  const primaryMediaType = validation.mediaType;
 
-  if (file) {
-    fileName = file.name;
+  const committedFiles: { fileName: string; fileBase64: string }[] = [];
+  const mediaItems: { type: MediaType; src: string; cover: string }[] = [];
+
+  for (const file of files) {
     const fileBuffer = await file.arrayBuffer();
-    fileBase64 = Buffer.from(fileBuffer).toString('base64');
-  } else if (mediaUrl) {
-    // Automatically download media from URL to save it locally
-    try {
-      const downloaded = await downloadMedia(mediaUrl);
-      fileName = downloaded.fileName;
-      fileBase64 = downloaded.fileBase64;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error during media download';
-      console.error('Failed to download media:', error);
-      // Fallback: if download fails, we could either error out or continue with just the URL
-      // Given user's request, erroring out is safer to ensure persistence.
-      return NextResponse.json({ error: `无法下载媒体文件进行本地保存: ${message}` }, { status: 500 });
-    }
+    const fileBase64 = Buffer.from(fileBuffer).toString('base64');
+    const type = inferMediaTypeFromFile(file);
+    committedFiles.push({ fileName: file.name, fileBase64 });
+    mediaItems.push({ type, src: file.name, cover: file.name });
   }
 
-  // assetReference should point to the local file we are about to commit
-  const assetReference = fileName;
+  for (const url of mediaUrls) {
+    try {
+      const downloaded = await downloadMedia(url);
+      const type = inferMediaTypeFromUrl(url) || 'image';
+      committedFiles.push({ fileName: downloaded.fileName, fileBase64: downloaded.fileBase64 });
+      mediaItems.push({ type, src: downloaded.fileName, cover: downloaded.fileName });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Media download failed';
+      return NextResponse.json({ error: `无法下载媒体文件: ${message}` }, { status: 500 });
+    }
+  }
 
   const indexMd = buildContributionIndexMd({
     title,
@@ -240,14 +238,19 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     prompt,
     tags,
     model,
-    mediaUrl,
     sourceUrl,
-    mediaType,
-    assetReference,
+    mediaItems,
   });
 
   const pr = await createContributionPullRequest(octokit, config, {
-    slug, title, description, model, mediaUrl, sourceUrl, mediaType, indexMd, fileName, fileBase64
+    slug,
+    title,
+    description,
+    model,
+    sourceUrl,
+    primaryMediaType,
+    indexMd,
+    files: committedFiles,
   });
 
   return NextResponse.json({ success: true, prUrl: pr.html_url });

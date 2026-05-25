@@ -79,12 +79,10 @@ describe('lib/github', () => {
           title: 'Video',
           description: '',
           model: '',
-          mediaUrl: '',
           sourceUrl: '',
-          mediaType: 'video',
+          primaryMediaType: 'video',
           indexMd: 'content',
-          fileName: 'clip.mp4',
-          fileBase64: 'base64data',
+          files: [{ fileName: 'clip.mp4', fileBase64: 'base64data' }]
         }
       );
 
@@ -107,12 +105,10 @@ describe('lib/github', () => {
           title: 'Test',
           description: 'Desc',
           model: 'Model',
-          mediaUrl: '',
           sourceUrl: 'src',
-          mediaType: 'image',
+          primaryMediaType: 'image',
           indexMd: 'content',
-          fileName: 'test.png',
-          fileBase64: 'base64data'
+          files: [{ fileName: 'test.png', fileBase64: 'base64data' }]
         }
       );
 
@@ -134,23 +130,21 @@ describe('lib/github', () => {
           title: 'Test',
           description: 'Desc',
           model: 'Model',
-          mediaUrl: 'http://example.com/image.png',
           sourceUrl: 'src',
-          mediaType: 'image',
+          primaryMediaType: 'image',
           indexMd: 'content',
-          fileName: 'http://example.com/image.png',
-          fileBase64: null
+          files: [{ fileName: 'image.png', fileBase64: 'base64' }]
         }
       );
 
       expect(result.html_url).toBe('pr-url');
-      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(1);
+      expect(mockOctokit.rest.repos.createOrUpdateFileContents).toHaveBeenCalledTimes(2);
     });
 
     it('handles unexpected errors in createContributionPullRequest', async () => {
       mockOctokit.rest.git.getRef.mockRejectedValue('String Error');
       // @ts-expect-error - testing invalid input types for error handling coverage
-      await expect(createContributionPullRequest(mockOctokit, { REPO_OWNER: 'o', REPO_NAME: 'r' }, { mediaType: 'image' }))
+      await expect(createContributionPullRequest(mockOctokit, { REPO_OWNER: 'o', REPO_NAME: 'r' }, { primaryMediaType: 'image' }))
         .rejects.toBe('String Error');
     });
 

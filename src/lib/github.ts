@@ -46,16 +46,14 @@ export async function createContributionPullRequest(
     title: string;
     description: string;
     model: string;
-    mediaUrl: string;
     sourceUrl: string;
-    mediaType: MediaType;
+    primaryMediaType: MediaType;
     indexMd: string;
-    fileName: string;
-    fileBase64: string | null;
+    files: { fileName: string; fileBase64: string }[];
   }
 ) {
   const { REPO_OWNER, REPO_NAME } = config;
-  const { slug, title, description, model, mediaUrl, sourceUrl, mediaType, indexMd, fileName, fileBase64 } = data;
+  const { slug, title, description, model, sourceUrl, primaryMediaType, indexMd, files } = data;
 
   // 1. Get main branch SHA
   const { data: mainRef } = await octokit.rest.git.getRef({
@@ -74,7 +72,7 @@ export async function createContributionPullRequest(
     sha: mainSha,
   });
 
-  const targetDir = mediaType === 'video' ? 'videos' : 'images';
+  const targetDir = primaryMediaType === 'video' ? 'videos' : 'images';
 
   // 3. Commit index.md
   await octokit.rest.repos.createOrUpdateFileContents({
@@ -86,14 +84,14 @@ export async function createContributionPullRequest(
     branch: branchName,
   });
 
-  if (fileBase64) {
-    // 4. Commit media file
+  // 4. Commit all media files
+  for (const file of files) {
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      path: `public/data/${targetDir}/${slug}/${fileName}`,
+      path: `public/data/${targetDir}/${slug}/${file.fileName}`,
       message: `Add media for: ${title}`,
-      content: fileBase64,
+      content: file.fileBase64,
       branch: branchName,
     });
   }
@@ -105,7 +103,7 @@ export async function createContributionPullRequest(
     title: `🎨 社区投稿: ${title}`,
     head: branchName,
     base: 'main',
-    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **标题**: ${title}\n- **标识**: ${slug}\n- **描述**: ${description || '未提供'}\n- **模型**: ${model || '未提供'}\n- **媒体**: ${mediaUrl || '本地上传'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n请在本地预览后点击 Merge。`,
+    body: `**来自 Prompt Gallery 的自动化投稿**\n\n- **标题**: ${title}\n- **标识**: ${slug}\n- **描述**: ${description || '未提供'}\n- **模型**: ${model || '未提供'}\n- **来源页面**: ${sourceUrl || '未提供'}\n\n该投稿包含 ${files.length} 个媒体文件。\n\n请在本地预览后点击 Merge。`,
   });
 
   return pr;

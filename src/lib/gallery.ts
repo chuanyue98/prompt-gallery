@@ -29,8 +29,9 @@ export function filterGalleryItems(items: GalleryItem[], search: string, categor
   });
 }
 
-export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover') {
-  const asset = getPrimaryMedia(item)?.[field] || item.mediaUrl;
+export function getGalleryMediaUrl(item: GalleryItem, field: 'src' | 'cover', index: number = 0) {
+  const mediaItem = item.media?.[index] || item.media?.[0];
+  const asset = mediaItem?.[field] || item.mediaUrl;
 
   if (!asset) {
     return '';

@@ -46,8 +46,20 @@ export async function POST(req: NextRequest) {
       description: getMetaContent(html, 'og:description'),
       image: getMetaContent(html, 'og:image'),
       video: getMetaContent(html, 'og:video'),
+      images: [] as string[],
       prompt: ''
     };
+
+    // Extract all media URLs (pbs.twimg.com or pbs.fxtwitter.com)
+    const mediaMatches = html.match(/https:\/\/pbs\.(twimg|fxtwitter)\.com\/media\/[^"'\s?]+/g);
+    if (mediaMatches) {
+      metadata.images = [...new Set(mediaMatches)].map(url => `${url}?name=orig`);
+    }
+
+    // If og:image is a mosaic, prefer the first individual image
+    if (metadata.image.includes('mosaic.fxtwitter.com') && metadata.images.length > 0) {
+      metadata.image = metadata.images[0];
+    }
 
     if (isX) {
       // For X, the description often contains the prompt. 

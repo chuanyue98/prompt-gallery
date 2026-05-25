@@ -6,7 +6,7 @@ import Image from 'next/image';
 interface ContributePreviewProps {
   preview: string | null;
   file: File | null;
-  mediaUrl: string;
+  mediaUrls: string[];
   onClearFile: () => void;
   onClearMediaUrl: () => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -16,7 +16,7 @@ interface ContributePreviewProps {
 export const ContributePreview: React.FC<ContributePreviewProps> = ({
   preview,
   file,
-  mediaUrl,
+  mediaUrls,
   onClearFile,
   onClearMediaUrl,
   onFileChange,
@@ -25,16 +25,16 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   // 使用 counter 防止子元素触发 dragleave
   const dragCounter = useRef(0);
-  const hasMediaUrl = mediaUrl.trim().length > 0;
+  const hasMediaUrls = mediaUrls.length > 0;
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current++;
-    if (!submitSuccess && !hasMediaUrl) {
+    if (!submitSuccess && !hasMediaUrls) {
       setIsDragging(true);
     }
-  }, [submitSuccess, hasMediaUrl]);
+  }, [submitSuccess, hasMediaUrls]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -58,7 +58,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
     setIsDragging(false);
     dragCounter.current = 0;
 
-    if (submitSuccess || hasMediaUrl) return;
+    if (submitSuccess || hasMediaUrls) return;
 
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles && droppedFiles.length > 0) {
@@ -70,7 +70,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
       } as unknown as React.ChangeEvent<HTMLInputElement>;
       onFileChange(mockEvent);
     }
-  }, [onFileChange, submitSuccess, hasMediaUrl]);
+  }, [onFileChange, submitSuccess, hasMediaUrls]);
 
   return (
     <div className="theme-media-stage flex min-h-[240px] sm:min-h-[400px] w-full flex-col items-center justify-center border-b sm:border-b-0 sm:border-r p-6 sm:p-8 md:w-1/2 shrink-0">
@@ -81,14 +81,23 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
           ) : (
             <Image src={preview} className="w-full h-full object-contain" alt="Preview" fill unoptimized />
           )}
+          {mediaUrls.length > 1 && (
+            <div className="absolute bottom-4 left-4 rounded-lg bg-black/60 px-3 py-1.5 text-[10px] font-black text-white backdrop-blur-md">
+              + {mediaUrls.length - 1} OTHER IMAGES
+            </div>
+          )}
           {!submitSuccess && (
-            <button onClick={onClearFile} className="theme-danger-button absolute top-3 right-3 sm:top-4 sm:right-4 rounded-full p-2">✕</button>
+            <button onClick={onClearFile || onClearMediaUrl} className="theme-danger-button absolute top-3 right-3 sm:top-4 sm:right-4 rounded-full p-2">✕</button>
           )}
         </div>
-      ) : hasMediaUrl ? (
+      ) : hasMediaUrls ? (
         <div className="theme-panel flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] sm:rounded-[2rem] px-6 sm:px-8 text-center py-8">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--accent)]">Media URL</p>
-          <p className="mt-4 break-all text-xs sm:text-sm text-[var(--text-secondary)]">{mediaUrl}</p>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--accent)]">
+            {mediaUrls.length} Media Item{mediaUrls.length > 1 ? 's' : ''}
+          </p>
+          <p className="mt-4 break-all text-xs sm:text-sm text-[var(--text-secondary)] line-clamp-3">
+            {mediaUrls[0]} {mediaUrls.length > 1 ? '...' : ''}
+          </p>
           {!submitSuccess && (
             <button type="button" onClick={onClearMediaUrl} className="theme-secondary-button mt-6 rounded-xl px-4 py-2 text-[10px] sm:text-xs font-bold">
               清空链接
@@ -112,7 +121,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
             {isDragging ? '松开即刻上传' : '点击或拖拽上传'}
           </p>
           <p className="pointer-events-none text-[10px] sm:text-xs text-[var(--text-muted)]">支持 MP4, PNG, JPG，或改填 mediaUrl</p>
-          <input type="file" className="hidden" onChange={onFileChange} accept="video/*,image/*" disabled={hasMediaUrl || submitSuccess} />
+          <input type="file" className="hidden" onChange={onFileChange} accept="video/*,image/*" disabled={hasMediaUrls || submitSuccess} />
         </label>
       )}
     </div>
