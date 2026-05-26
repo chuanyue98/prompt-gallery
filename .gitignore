@@ -48,3 +48,5 @@ gallery-data.json
 
 # local agent workspace
 .codex/
+.gemini/skills/
+.idea/
