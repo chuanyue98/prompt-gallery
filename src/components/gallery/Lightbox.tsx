@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { GalleryItem } from '@/types/gallery';
-import { getGalleryMediaUrl, getPrimaryMediaType, isVideoAsset } from '@/lib/gallery';
+import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 
 interface LightboxProps {
   item: GalleryItem;
