@@ -76,10 +76,22 @@ async function sync() {
           coverFile = data.mediaUrl || frontmatterMedia.cover;
         }
 
-        const resolvedMedia = data.mediaUrl || frontmatterMedia?.src;
+        const resolvedMedia = data.mediaUrl || (Array.isArray(data.media) ? data.media[0]?.src : null);
         const mediaPath = resolvedMedia && isExternalUrl(resolvedMedia)
           ? ''
           : `/data/${cat}/${slug}/`;
+
+        const finalMedia = Array.isArray(data.media) && data.media.length > 0
+          ? data.media.map(m => ({
+              type: m.type || type,
+              src: m.src,
+              cover: m.cover || m.src
+            }))
+          : [{
+              type: type,
+              src: mainMedia,
+              cover: coverFile
+            }];
 
         galleryData.push({
           slug,
@@ -87,11 +99,7 @@ async function sync() {
           content,
           type,
           mediaPath,
-          media: [{
-            type: frontmatterMedia?.type || type,
-            src: mainMedia,
-            cover: coverFile
-          }]
+          media: finalMedia
         });
         console.log(`✅ Cataloged: ${slug}`);
       } catch (err) {
