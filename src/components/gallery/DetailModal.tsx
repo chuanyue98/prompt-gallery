@@ -161,7 +161,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <h2 className="modal-title">{item.title || item.slug}</h2>
 
             <div className="modal-author">
-              <div className="avatar lg">{(item.title || item.slug).slice(0, 2).toUpperCase()}</div>
+              <div className="avatar lg">{String(item.title || item.slug).slice(0, 2).toUpperCase()}</div>
               <div>
                 <div className="aname">{item.model ?? 'Prompt Archive'}</div>
                 <div className="acat">{isVideo ? 'Video' : 'Image'} / {item.tags[0] ?? 'Reference'}</div>

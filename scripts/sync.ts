@@ -43,6 +43,11 @@ async function sync() {
         const restData = { ...(data as Record<string, unknown>) };
         delete restData.seed;
 
+        // Ensure title is a string if it exists
+        if (restData.title !== undefined) {
+          restData.title = String(restData.title);
+        }
+
         const files = await fs.readdir(itemPath);
         
         const frontmatterMedia = Array.isArray(data.media) ? data.media[0] : null;
