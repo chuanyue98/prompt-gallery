@@ -10,6 +10,12 @@ function isExternalUrl(value: string) {
   return /^https?:\/\//.test(value);
 }
 
+interface MediaItem {
+  type?: 'video' | 'image';
+  src: string;
+  cover?: string;
+}
+
 async function sync() {
   console.log('🚀 Starting robust sync (public/data)...');
   
@@ -50,7 +56,7 @@ async function sync() {
 
         const files = await fs.readdir(itemPath);
         
-        const frontmatterMedia = Array.isArray(data.media) ? data.media[0] : null;
+        const frontmatterMedia = Array.isArray(data.media) ? (data.media[0] as MediaItem) : null;
 
         // 智能识别媒体
         const videoFile = files.find(f => f.endsWith('.mp4'));
@@ -68,28 +74,28 @@ async function sync() {
         // 自动寻找封面 (如果是视频，优先找 cover.png，找不到用视频自己)
         let coverFile = imageFiles.find(f => f.includes('cover') || f.includes('preview')) || imageFiles[0] || videoFile || "";
 
-        if (!mainMedia && (data.mediaUrl || frontmatterMedia?.src)) {
-          mainMedia = data.mediaUrl || frontmatterMedia.src;
+        if (!mainMedia && ((data.mediaUrl as string) || frontmatterMedia?.src)) {
+          mainMedia = (data.mediaUrl as string) || frontmatterMedia!.src;
         }
 
-        if (!coverFile && (data.mediaUrl || frontmatterMedia?.cover)) {
-          coverFile = data.mediaUrl || frontmatterMedia.cover;
+        if (!coverFile && ((data.mediaUrl as string) || frontmatterMedia?.cover)) {
+          coverFile = (data.mediaUrl as string) || frontmatterMedia?.cover || "";
         }
 
-        const resolvedMedia = data.mediaUrl || (Array.isArray(data.media) ? data.media[0]?.src : (data.media as any)?.src);
+        const resolvedMedia = (data.mediaUrl as string) || (Array.isArray(data.media) ? (data.media[0] as MediaItem)?.src : (data.media as MediaItem)?.src);
         const mediaPath = resolvedMedia && isExternalUrl(resolvedMedia)
           ? ''
           : `/data/${cat}/${slug}/`;
 
-        let finalMedia = [];
+        let finalMedia: MediaItem[] = [];
         if (Array.isArray(data.media) && data.media.length > 0) {
-          finalMedia = data.media.map(m => ({
+          finalMedia = (data.media as MediaItem[]).map(m => ({
             type: m.type || type,
             src: m.src,
             cover: m.cover || m.src
           }));
-        } else if (data.media && typeof data.media === 'object' && (data.media as any).src) {
-          const m = data.media as any;
+        } else if (data.media && typeof data.media === 'object' && (data.media as MediaItem).src) {
+          const m = data.media as MediaItem;
           finalMedia = [{
             type: m.type || type,
             src: m.src,
