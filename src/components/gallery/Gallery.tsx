@@ -27,13 +27,13 @@ function Hero({
 
   return (
     <section className="hero" onClick={() => onOpen(item)}>
-      {coverUrl ? <img src={coverUrl} alt={item.slug} /> : null}
+      {coverUrl ? <img src={coverUrl} alt={item.title || item.slug} /> : null}
       <div className="hero-grad" />
       <div className="hero-content">
         <div className="hero-tag">
           <span className="dot" /> Editor&apos;s pick / This week
         </div>
-        <h2 className="hero-title">{item.slug}</h2>
+        <h2 className="hero-title">{item.title || item.slug}</h2>
         <p className="hero-prompt">{item.description}</p>
         <div className="hero-row">
           <div className="author">

@@ -41,8 +41,12 @@ async function sync() {
         const fileContent = await fs.readFile(indexPath, 'utf-8');
         const { data, content } = matter(fileContent);
         const restData = { ...(data as Record<string, unknown>) };
-        delete restData.title;
         delete restData.seed;
+
+        // Ensure title is a string if it exists
+        if (restData.title !== undefined) {
+          restData.title = String(restData.title);
+        }
 
         const files = await fs.readdir(itemPath);
         

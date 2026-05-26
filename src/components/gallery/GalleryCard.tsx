@@ -43,7 +43,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
         className="card-media"
         role="button"
         tabIndex={0}
-        aria-label={`打开作品详情: ${item.slug}`}
+        aria-label={`打开作品详情: ${item.title || item.slug}`}
         onClick={() => onSelect(item)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -54,7 +54,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
       >
         {coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt={item.description || item.slug} />
+          <img src={coverUrl} alt={item.description || item.title || item.slug} />
         ) : (
           <div className="theme-panel flex min-h-[320px] items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
             暂无媒体内容
@@ -86,7 +86,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             <div className="card-prompt">{item.description || item.slug}</div>
             <div className="card-foot">
               <div className="author">
-                <span>{item.slug}</span>
+                <span>{item.title || item.slug}</span>
               </div>
               <button
                 aria-label={`${item.slug} quick copy`}
