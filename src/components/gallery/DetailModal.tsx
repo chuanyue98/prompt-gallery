@@ -109,7 +109,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <video key={mediaUrl} src={mediaUrl} className="h-full w-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={mediaUrl} src={coverUrl} alt={item.description || item.slug} />
+              <img key={mediaUrl} src={coverUrl} alt={item.description || item.title || item.slug} />
             )
           ) : (
             <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
@@ -158,10 +158,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               </div>
             </div>
 
-            <h2 className="modal-title">{item.slug}</h2>
+            <h2 className="modal-title">{item.title || item.slug}</h2>
 
             <div className="modal-author">
-              <div className="avatar lg">{item.slug.slice(0, 2).toUpperCase()}</div>
+              <div className="avatar lg">{(item.title || item.slug).slice(0, 2).toUpperCase()}</div>
               <div>
                 <div className="aname">{item.model ?? 'Prompt Archive'}</div>
                 <div className="acat">{isVideo ? 'Video' : 'Image'} / {item.tags[0] ?? 'Reference'}</div>

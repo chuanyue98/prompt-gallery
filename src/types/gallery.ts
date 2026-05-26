@@ -6,6 +6,7 @@ export interface Media {
 
 export interface GalleryItem {
   slug: string;
+  title?: string;
   description: string;
   tags: string[];
   mediaPath: string;
