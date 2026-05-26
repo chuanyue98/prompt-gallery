@@ -76,22 +76,32 @@ async function sync() {
           coverFile = data.mediaUrl || frontmatterMedia.cover;
         }
 
-        const resolvedMedia = data.mediaUrl || (Array.isArray(data.media) ? data.media[0]?.src : null);
+        const resolvedMedia = data.mediaUrl || (Array.isArray(data.media) ? data.media[0]?.src : (data.media as any)?.src);
         const mediaPath = resolvedMedia && isExternalUrl(resolvedMedia)
           ? ''
           : `/data/${cat}/${slug}/`;
 
-        const finalMedia = Array.isArray(data.media) && data.media.length > 0
-          ? data.media.map(m => ({
-              type: m.type || type,
-              src: m.src,
-              cover: m.cover || m.src
-            }))
-          : [{
-              type: type,
-              src: mainMedia,
-              cover: coverFile
-            }];
+        let finalMedia = [];
+        if (Array.isArray(data.media) && data.media.length > 0) {
+          finalMedia = data.media.map(m => ({
+            type: m.type || type,
+            src: m.src,
+            cover: m.cover || m.src
+          }));
+        } else if (data.media && typeof data.media === 'object' && (data.media as any).src) {
+          const m = data.media as any;
+          finalMedia = [{
+            type: m.type || type,
+            src: m.src,
+            cover: m.cover || m.src
+          }];
+        } else {
+          finalMedia = [{
+            type: type,
+            src: mainMedia,
+            cover: coverFile
+          }];
+        }
 
         galleryData.push({
           slug,
