@@ -61,9 +61,15 @@ describe('lib/github', () => {
     it('handles various URLs', () => {
       expect(inferMediaTypeFromUrl('test.mp4')).toBe('video');
       expect(inferMediaTypeFromUrl('test.png')).toBe('image');
-      expect(inferMediaTypeFromUrl('test.unknown')).toBeNull(); // This covers line 18
+      expect(inferMediaTypeFromUrl('test.unknown')).toBeNull();
       expect(inferMediaTypeFromUrl(null)).toBeNull();
       expect(inferMediaTypeFromUrl('')).toBeNull();
+    });
+
+    it('infers type from mime_type query param', () => {
+      expect(inferMediaTypeFromUrl('https://cdn.example.com/video?mime_type=video_mp4')).toBe('video');
+      expect(inferMediaTypeFromUrl('https://cdn.example.com/img?mime_type=image_png')).toBe('image');
+      expect(inferMediaTypeFromUrl('https://cdn.example.com/file?mime_type=unknown')).toBeNull();
     });
   });
 

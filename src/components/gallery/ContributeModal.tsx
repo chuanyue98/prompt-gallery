@@ -10,6 +10,40 @@ interface ContributeModalProps {
   onClose: () => void;
 }
 
+const MAX_UPLOAD_FILE_SIZE_BYTES = 4 * 1024 * 1024;
+
+function formatUploadLimit() {
+  return `${MAX_UPLOAD_FILE_SIZE_BYTES / 1024 / 1024}MB`;
+}
+
+function normalizeNonJsonError(response: Response, text: string) {
+  if (response.status === 413 || text.includes('Request Entity Too Large')) {
+    return `上传文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`;
+  }
+
+  const contentType = response.headers?.get('content-type') || '';
+  if (contentType.includes('text/html') || text.trim().startsWith('<')) {
+    return `请求失败（HTTP ${response.status}）`;
+  }
+
+  return text.trim() || `请求失败（HTTP ${response.status}）`;
+}
+
+async function readApiResponse(response: Response) {
+  const contentType = response.headers?.get('content-type') || '';
+
+  if (contentType.includes('application/json') || !('text' in response)) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(normalizeNonJsonError(response, text));
+  }
+}
+
 export default function ContributeModal({ isOpen, onClose }: ContributeModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -36,7 +70,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-      const result = await response.json();
+      const result = await readApiResponse(response);
       if (result.success && result.metadata) {
         const { title, prompt, images, video } = result.metadata;
         const mediaUrls = video ? [video] : images || [];
@@ -67,6 +101,12 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      if (selectedFile.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+        alert(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
+        e.target.value = '';
+        return;
+      }
+
       setSubmissionMode('upload');
       setFormData((current) => ({ ...current, mediaUrls: [] }));
       setFile(selectedFile);
@@ -100,6 +140,11 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       return;
     }
 
+    if (file && file.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+      alert(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
@@ -119,7 +164,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       formData.mediaUrls.forEach(url => body.append('mediaUrl', url));
 
       const response = await fetch('/api/contribute', { method: 'POST', body });
-      const result = await response.json();
+      const result = await readApiResponse(response);
 
       if (result.success) {
         setSubmissionSuccess(result.prUrl);

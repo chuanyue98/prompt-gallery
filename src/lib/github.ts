@@ -7,14 +7,30 @@ export type MediaType = 'video' | 'image';
 
 export function inferMediaTypeFromUrl(url: string | undefined | null): MediaType | null {
   if (!url) return null;
-  const normalizedUrl = url.split('?')[0].toLowerCase();
 
-  if (normalizedUrl.endsWith('.mp4') || normalizedUrl.endsWith('.webm') || normalizedUrl.endsWith('.mov')) {
+  let pathname: string;
+  let searchParams: URLSearchParams | undefined;
+
+  try {
+    const urlObj = new URL(url);
+    pathname = urlObj.pathname.toLowerCase();
+    searchParams = urlObj.searchParams;
+  } catch {
+    pathname = url.split('?')[0].toLowerCase();
+  }
+
+  if (pathname.endsWith('.mp4') || pathname.endsWith('.webm') || pathname.endsWith('.mov')) {
     return 'video';
   }
 
-  if (normalizedUrl.endsWith('.png') || normalizedUrl.endsWith('.jpg') || normalizedUrl.endsWith('.jpeg') || normalizedUrl.endsWith('.webp') || normalizedUrl.endsWith('.gif')) {
+  if (pathname.endsWith('.png') || pathname.endsWith('.jpg') || pathname.endsWith('.jpeg') || pathname.endsWith('.webp') || pathname.endsWith('.gif')) {
     return 'image';
+  }
+
+  const mimeType = searchParams?.get('mime_type');
+  if (mimeType) {
+    if (mimeType.startsWith('video')) return 'video';
+    if (mimeType.startsWith('image')) return 'image';
   }
 
   return null;

@@ -53,6 +53,50 @@ describe('ContributeModal validation and errors', () => {
     vi.unstubAllGlobals();
   });
 
+  it('shows readable error when API returns non-JSON 413 text', async () => {
+    const user = userEvent.setup();
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      status: 413,
+      headers: new Headers({ 'content-type': 'text/plain' }),
+      text: () => Promise.resolve('Request Entity Too Large'),
+    }));
+
+    render(<ContributeModal isOpen onClose={() => {}} />);
+
+    await user.click(screen.getByRole('button', { name: 'Media URL' }));
+    await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'Photo Title');
+    await user.type(screen.getByPlaceholderText('完整咒语...'), 'My prompt');
+    await user.type(screen.getByPlaceholderText('https://example.com/your-image.png'), 'https://example.com/img.png');
+
+    await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('上传文件过大')));
+    expect(alertSpy).not.toHaveBeenCalledWith(expect.stringContaining('Unexpected token'));
+
+    alertSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('rejects oversized uploads before submitting', async () => {
+    const user = userEvent.setup();
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    render(<ContributeModal isOpen onClose={() => {}} />);
+
+    const file = new File([new Uint8Array(4 * 1024 * 1024 + 1)], 'large.mp4', { type: 'video/mp4' });
+    const input = screen.getByTestId('contribute-modal-shell').querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, file);
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('文件过大'));
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it('clears mediaUrl via the clear button in preview', async () => {
     const user = userEvent.setup();
     render(<ContributeModal isOpen onClose={() => {}} />);
