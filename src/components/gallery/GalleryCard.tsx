@@ -80,6 +80,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             loop
             playsInline
             preload="auto"
+            poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
           />
         ) : coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

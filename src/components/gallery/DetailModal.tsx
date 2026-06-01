@@ -112,9 +112,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 className="h-full w-full object-contain"
                 controls
                 autoPlay
+                muted
                 loop
                 playsInline
                 preload="metadata"
+                poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
