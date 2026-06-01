@@ -134,8 +134,9 @@ export async function POST(req: NextRequest) {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_UPLOAD_FILE_SIZE = 4 * 1024 * 1024; // Keep multipart uploads below common platform request limits.
 
-async function downloadMedia(url: string): Promise<{ fileBase64: string; fileName: string }> {
+async function downloadMedia(url: string): Promise<{ fileBase64: string; fileName: string; mediaType?: MediaType }> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch media from URL: ${response.statusText}`);
@@ -152,22 +153,24 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
   }
 
   const fileBase64 = Buffer.from(buffer).toString('base64');
+  let mediaType: MediaType | undefined;
+  const responseContentType = response.headers.get('content-type') || '';
+  const mediaTypePart = responseContentType.split(';')[0].trim();
+  if (mediaTypePart.startsWith('video/')) mediaType = 'video';
+  else if (mediaTypePart.startsWith('image/')) mediaType = 'image';
   
   let fileName = 'media-file';
   const urlPath = new URL(url).pathname;
   const lastPart = urlPath.split('/').pop();
   if (lastPart && lastPart.includes('.')) {
     fileName = lastPart;
-  } else {
-    const contentType = response.headers.get('content-type');
-    if (contentType) {
-      const typePart = contentType.split(';')[0].trim();
-      const ext = typePart.split('/').pop();
-      if (ext) fileName = `media-file.${ext}`;
-    }
+  } else if (responseContentType) {
+    const typePart = responseContentType.split(';')[0].trim();
+    const ext = typePart.split('/').pop();
+    if (ext) fileName = `media-file.${ext}`;
   }
 
-  return { fileBase64, fileName };
+  return { fileBase64, fileName, mediaType };
 }
 
 async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_OWNER: string, REPO_NAME: string }) {
@@ -186,6 +189,13 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     }
   });
 
+  if (files.some((file) => file.size > MAX_UPLOAD_FILE_SIZE)) {
+    return NextResponse.json(
+      { error: '上传文件过大，请压缩到 4MB 以内，或改用 Media URL 投稿。' },
+      { status: 413 }
+    );
+  }
+
   const mediaUrls: string[] = [];
   formData.getAll('mediaUrl').forEach((val) => {
     if (typeof val === 'string' && val.trim().length > 0) {
@@ -202,12 +212,12 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
 
   const validation = validateCreateContributionInput({ title, prompt, mediaUrls, files });
 
-  if (validation.error || !validation.mediaType) {
-    return NextResponse.json({ error: validation.error || 'Validation failed' }, { status: 400 });
+  if (validation.error) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 
   const slug = buildContributionSlug({ title });
-  const primaryMediaType = validation.mediaType;
+  let primaryMediaType = validation.mediaType;
 
   const committedFiles: { fileName: string; fileBase64: string }[] = [];
   const mediaItems: { type: MediaType; src: string; cover: string }[] = [];
@@ -224,7 +234,7 @@ let urlIdx = 0;
 for (const url of mediaUrls) {
   try {
     const downloaded = await downloadMedia(url);
-    const type = inferMediaTypeFromUrl(url) || 'image';
+    const type = inferMediaTypeFromUrl(url) || downloaded.mediaType || 'image';
 
     // Ensure unique filename for downloads
     let finalFileName = downloaded.fileName;
@@ -241,6 +251,10 @@ for (const url of mediaUrls) {
       const message = error instanceof Error ? error.message : 'Media download failed';
       return NextResponse.json({ error: `无法下载媒体文件: ${message}` }, { status: 500 });
     }
+  }
+
+  if (!primaryMediaType) {
+    primaryMediaType = mediaItems[0]?.type || 'image';
   }
 
   const indexMd = buildContributionIndexMd({

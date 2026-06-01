@@ -186,6 +186,19 @@ describe('POST handler integration', () => {
     expect(res.status).toBe(200);
   });
 
+  it('rejects oversized file uploads with JSON error', async () => {
+    const formData = new FormData();
+    formData.append('title', 'T');
+    formData.append('prompt', 'P');
+    formData.append('file', new Blob([new Uint8Array(4 * 1024 * 1024 + 1)], { type: 'video/mp4' }), 'large.mp4');
+
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST' });
+    mockFormDataRequest(req, formData);
+    const res = await POST(req);
+    expect(res.status).toBe(413);
+    expect(await res.json()).toMatchObject({ error: expect.stringContaining('上传文件过大') });
+  });
+
   it('handles non-Error objects in catch', async () => {
     (getOctokit as Mock).mockImplementation(() => { throw 'string error'; });
     const req = new NextRequest('http://localhost/api/contribute', { method: 'POST' });
