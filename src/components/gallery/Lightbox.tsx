@@ -36,7 +36,15 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
       <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         {mediaUrl ? (
           isVideo ? (
-            <video key={mediaUrl} src={mediaUrl} className="max-w-full max-h-full" controls autoPlay />
+            <video
+              key={mediaUrl}
+              src={mediaUrl}
+              className="max-w-full max-h-full"
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+            />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={mediaUrl} src={coverUrl} alt={item.description || item.title || item.slug} className="max-w-full max-h-full object-contain" />

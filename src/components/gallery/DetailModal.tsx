@@ -106,7 +106,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         <div className="modal-media group relative cursor-zoom-in" onClick={onLightboxOpen}>
           {mediaUrl ? (
             isVideo ? (
-              <video key={mediaUrl} src={mediaUrl} className="h-full w-full object-contain" controls autoPlay loop onClick={(e) => e.stopPropagation()} />
+              <video
+                key={mediaUrl}
+                src={mediaUrl}
+                className="h-full w-full object-contain"
+                controls
+                autoPlay
+                loop
+                playsInline
+                preload="metadata"
+                onClick={(e) => e.stopPropagation()}
+              />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={mediaUrl} src={coverUrl} alt={item.description || item.title || item.slug} />
@@ -145,7 +155,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </>
           )}
 
-          <div data-testid="mobile-fullscreen-hint" className="modal-play">Fullscreen</div>
+          {!isVideo ? <div data-testid="mobile-fullscreen-hint" className="modal-play">Fullscreen</div> : null}
         </div>
 
         <div className="modal-side">

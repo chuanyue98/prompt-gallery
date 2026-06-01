@@ -31,10 +31,27 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
   onCopy,
   isCopied,
 }) => {
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const coverUrl = getGalleryMediaUrl(item, 'cover');
   const srcUrl = getGalleryMediaUrl(item, 'src');
   const primaryMediaType = getPrimaryMediaType(item);
   const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(srcUrl));
+
+  const playVideoPreview = () => {
+    if (videoRef.current) {
+      safelyPlayVideo(videoRef.current);
+    }
+  };
+
+  const resetVideoPreview = () => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    video.pause();
+    video.currentTime = 0;
+  };
 
   return (
     <article className="card reveal-hover">
@@ -51,8 +68,20 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             onSelect(item);
           }
         }}
+        onMouseEnter={isVideo ? playVideoPreview : undefined}
+        onMouseLeave={isVideo ? resetVideoPreview : undefined}
       >
-        {coverUrl ? (
+        {isVideo && srcUrl ? (
+          <video
+            ref={videoRef}
+            src={srcUrl}
+            className="h-auto w-full"
+            muted
+            loop
+            playsInline
+            preload="auto"
+          />
+        ) : coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={coverUrl} alt={item.description || item.title || item.slug} />
         ) : (
@@ -60,17 +89,6 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             暂无媒体内容
           </div>
         )}
-
-        {isVideo ? (
-          <video
-            src={srcUrl}
-            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-            muted
-            loop
-            onMouseEnter={(e) => safelyPlayVideo(e.currentTarget)}
-            onMouseLeave={(e) => e.currentTarget.pause()}
-          />
-        ) : null}
 
         {isVideo ? <div className="video-badge">Motion</div> : null}
         {!isVideo && item.media.length > 1 ? <div className="video-badge">{item.media.length} Photos</div> : null}
