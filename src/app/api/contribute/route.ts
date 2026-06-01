@@ -212,7 +212,8 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
 
   const validation = validateCreateContributionInput({ title, prompt, mediaUrls, files });
 
-  if (validation.error) {
+  const isOnlyMediaTypeError = validation.error === 'Media must be an image or video file' && mediaUrls.length > 0;
+  if (validation.error && !isOnlyMediaTypeError) {
     return NextResponse.json({ error: validation.error }, { status: 400 });
   }
 

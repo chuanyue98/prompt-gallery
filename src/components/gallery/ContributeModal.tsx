@@ -21,6 +21,11 @@ function normalizeNonJsonError(response: Response, text: string) {
     return `上传文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`;
   }
 
+  const contentType = response.headers?.get('content-type') || '';
+  if (contentType.includes('text/html') || text.trim().startsWith('<')) {
+    return `请求失败（HTTP ${response.status}）`;
+  }
+
   return text.trim() || `请求失败（HTTP ${response.status}）`;
 }
 
