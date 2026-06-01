@@ -315,7 +315,8 @@ body.lightbox-active nav.fixed {
   background: #0a0a0d;
 }
 
-.hero img {
+.hero img,
+.hero video {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -324,7 +325,8 @@ body.lightbox-active nav.fixed {
   transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.hero:hover img { transform: scale(1.04); }
+.hero:hover img,
+.hero:hover video { transform: scale(1.04); }
 
 .hero-grad {
   position: absolute;

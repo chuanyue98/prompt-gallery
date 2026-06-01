@@ -42,8 +42,10 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
               className="max-w-full max-h-full"
               controls
               autoPlay
+              muted
               playsInline
               preload="metadata"
+              poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element

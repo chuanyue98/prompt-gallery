@@ -134,13 +134,53 @@ describe('Gallery component', () => {
     await user.click(screen.getByRole('button', { name: '全部' }));
     await user.type(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'), 'nomatch');
     expect(await screen.findByText('没有匹配当前筛选条件的内容。')).toBeInTheDocument();
+    
+    // When no matches, hero should be null per our change
+    expect(screen.queryByTestId('hero-video')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('hero-image')).not.toBeInTheDocument();
 
     // Clear search and try a search that matches something to ensure the message disappears
     await user.clear(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'));
-    expect(screen.queryByText('没有匹配当前筛选条件的内容。')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('没有匹配当前筛选条件的内容。')).not.toBeInTheDocument();
+    });
+  });
+
+  it('renders video hero for video items', async () => {
+    render(<Gallery />);
+    const video = await screen.findByTestId('hero-video');
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveAttribute('src', '/media/video-item/clip.mp4');
+    expect(video).toHaveProperty('muted', true);
+    expect(video).toHaveProperty('loop', true);
+  });
+
+  it('renders image hero for image items', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [galleryItems[1]],
+    }));
+    render(<Gallery />);
+    const img = await screen.findByTestId('hero-image');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/media/image-item/cover.png');
+  });
+
+  it('handles empty media array gracefully in Hero', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [emptyMediaItem],
+    }));
+    render(<Gallery />);
+    // Should not render video or image test-id
+    await waitFor(() => {
+      expect(screen.queryByTestId('hero-video')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('hero-image')).not.toBeInTheDocument();
+    });
   });
 
   it('handles submission error with non-Error object', async () => {
+
     const alertMock = vi.fn();
     vi.stubGlobal('alert', alertMock);
     // Mock fetch to reject with a string

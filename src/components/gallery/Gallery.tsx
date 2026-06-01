@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
-import { filterGalleryItems, getGalleryMediaUrl } from '@/lib/gallery';
+import { filterGalleryItems, getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 
 import GalleryHeader from './GalleryHeader';
 import GalleryCard from './GalleryCard';
@@ -24,10 +24,25 @@ function Hero({
   }
 
   const coverUrl = getGalleryMediaUrl(item, 'cover');
+  const srcUrl = getGalleryMediaUrl(item, 'src');
+  const isVideo = item.media?.[0]?.type === 'video' || isVideoAsset(srcUrl);
 
   return (
     <section className="hero" onClick={() => onOpen(item)}>
-      {coverUrl ? <img src={coverUrl} alt={item.title || item.slug} /> : null}
+      {isVideo && srcUrl ? (
+        <video
+          key={srcUrl}
+          data-testid="hero-video"
+          src={srcUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
+        />
+      ) : coverUrl ? (
+        <img data-testid="hero-image" src={coverUrl} alt={item.title || item.slug} />
+      ) : null}
       <div className="hero-grad" />
       <div className="hero-content">
         <div className="hero-tag">
@@ -173,7 +188,7 @@ export default function Gallery() {
   }, [deleteReason]);
 
   const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
-  const heroItem = filteredItems[0] ?? items[0] ?? null;
+  const heroItem = filteredItems.length > 0 ? filteredItems[0] : null;
 
   return (
     <div className="main">
