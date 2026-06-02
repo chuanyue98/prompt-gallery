@@ -842,12 +842,36 @@ body.lightbox-active nav.fixed {
   .modal-title { font-size: 28px; }
   .catstrip { flex-direction: column; align-items: stretch; }
   .masonry { column-count: 2; }
-  .modal {
-    max-height: none;
-    height: 100%;
-    border-radius: 18px 18px 0 0;
-    grid-template-columns: 1fr;
+
+  .modal-scrim {
+    padding: 0;
+    align-items: flex-end;
   }
+
+  .modal {
+    height: 92vh;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: 42vh 1fr;
+  }
+
+  .modal-side-scroll {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+}
+
+@media (hover: none) and (max-width: 760px) {
+  .card-overlay {
+    opacity: 1;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.85) 100%);
+  }
+  .card-overlay-top { display: none; }
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+  .modal { grid-template-rows: 30vh 1fr; }
 }
 
 @media (max-width: 460px) {
