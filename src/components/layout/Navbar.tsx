@@ -105,7 +105,7 @@ export default function Navbar() {
               placeholder="Search prompts, styles, creators..."
               spellCheck={false}
             />
-            <kbd>⌘K</kbd>
+            <kbd className="hidden sm:inline">⌘K</kbd>
           </div>
 
           <div className="nav-right">
