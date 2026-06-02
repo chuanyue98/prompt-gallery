@@ -833,8 +833,6 @@ body.lightbox-active nav.fixed {
     max-width: none;
   }
 
-  .search kbd { display: none; }
-
   .main { padding: 16px; }
   .hero { aspect-ratio: 4 / 5; }
   .hero-content { padding: 24px; }
@@ -862,12 +860,16 @@ body.lightbox-active nav.fixed {
   }
 }
 
-@media (hover: none) {
+@media (hover: none) and (max-width: 760px) {
   .card-overlay {
     opacity: 1;
     background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.85) 100%);
   }
   .card-overlay-top { display: none; }
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+  .modal { grid-template-rows: 30vh 1fr; }
 }
 
 @media (max-width: 460px) {
