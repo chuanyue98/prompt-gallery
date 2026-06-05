@@ -99,11 +99,18 @@ describe('validateMediaDownloadUrl', () => {
     await expect(validateMediaDownloadUrl('http://[fd00::1]/a.png')).resolves.toContain('not allowed');
     await expect(validateMediaDownloadUrl('http://[fe90::1]/a.png')).resolves.toContain('not allowed');
     await expect(validateMediaDownloadUrl('http://[::ffff:7f00:1]/a.png')).resolves.toContain('not allowed');
+    await expect(validateMediaDownloadUrl('http://[0:0:0:0:0:0:0:1]/a.png')).resolves.toContain('not allowed');
+    await expect(validateMediaDownloadUrl('http://[0:0:0:0:0:ffff:10.0.0.1]/a.png')).resolves.toContain('not allowed');
   });
 
   it('rejects hostnames that resolve to private addresses', async () => {
     vi.mocked(lookup).mockResolvedValueOnce([{ address: '10.0.0.2', family: 4 }]);
     await expect(validateMediaDownloadUrl('https://internal.example/a.png')).resolves.toContain('not allowed');
+  });
+
+  it('returns a validation error when DNS lookup fails', async () => {
+    vi.mocked(lookup).mockRejectedValueOnce(new Error('ENOTFOUND'));
+    await expect(validateMediaDownloadUrl('https://missing.example/a.png')).resolves.toContain('could not be resolved');
   });
 });
 

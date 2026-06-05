@@ -141,8 +141,17 @@ const MEDIA_DOWNLOAD_TIMEOUT_MS = 10_000;
 const MAX_MEDIA_REDIRECTS = 3;
 
 function isPrivateIpAddress(address: string) {
-  if (address.startsWith('::ffff:')) {
-    const mapped = address.slice('::ffff:'.length);
+  let sanitized = address.trim().toLowerCase();
+  if (isIP(sanitized) === 6) {
+    try {
+      sanitized = new URL(`http://[${sanitized}]`).hostname.replace(/^\[|\]$/g, '');
+    } catch {
+      // Keep the original normalized string if URL parsing rejects it.
+    }
+  }
+
+  if (sanitized.startsWith('::ffff:')) {
+    const mapped = sanitized.slice('::ffff:'.length);
     if (mapped.includes('.')) {
       return isPrivateIpAddress(mapped);
     }
@@ -158,8 +167,8 @@ function isPrivateIpAddress(address: string) {
     }
   }
 
-  if (isIP(address) === 4) {
-    const [first, second, third] = address.split('.').map(Number);
+  if (isIP(sanitized) === 4) {
+    const [first, second, third] = sanitized.split('.').map(Number);
     return first === 0
       || first === 10
       || first === 127
@@ -174,16 +183,15 @@ function isPrivateIpAddress(address: string) {
       || first >= 224;
   }
 
-  if (isIP(address) === 6) {
-    const normalized = address.toLowerCase();
-    const firstHextet = parseInt(normalized.split(':')[0] || '0', 16);
-    return normalized === '::1'
-      || normalized === '::'
-      || normalized.startsWith('fc')
-      || normalized.startsWith('fd')
+  if (isIP(sanitized) === 6) {
+    const firstHextet = parseInt(sanitized.split(':')[0] || '0', 16);
+    return sanitized === '::1'
+      || sanitized === '::'
+      || sanitized.startsWith('fc')
+      || sanitized.startsWith('fd')
       || (firstHextet >= 0xfe80 && firstHextet <= 0xfebf)
-      || normalized.startsWith('ff')
-      || normalized.startsWith('2001:db8:');
+      || sanitized.startsWith('ff')
+      || sanitized.startsWith('2001:db8:');
   }
 
   return false;
@@ -210,7 +218,12 @@ export async function validateMediaDownloadUrl(value: string) {
     return isPrivateIpAddress(hostname) ? 'Media URL host is not allowed' : null;
   }
 
-  const addresses = await lookup(hostname, { all: true, verbatim: true });
+  let addresses;
+  try {
+    addresses = await lookup(hostname, { all: true, verbatim: true });
+  } catch {
+    return 'Media URL host could not be resolved';
+  }
   if (addresses.some(({ address }) => isPrivateIpAddress(address))) {
     return 'Media URL host is not allowed';
   }
