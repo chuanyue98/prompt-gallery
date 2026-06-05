@@ -23,6 +23,7 @@ interface ContributeFormProps {
   onClearFileAndPreview: () => void;
   onParseLink: (url: string) => Promise<void>;
   isParsing: boolean;
+  feedbackMessage?: string | null;
 }
 
 export const ContributeForm: React.FC<ContributeFormProps> = ({
@@ -36,6 +37,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   onClearFileAndPreview,
   onParseLink,
   isParsing,
+  feedbackMessage,
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-5 sm:space-y-6 flex-grow overflow-y-auto pr-2 custom-scrollbar">
@@ -61,6 +63,12 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
           Media URL
         </button>
       </div>
+
+      {feedbackMessage ? (
+        <div role="alert" className="theme-danger-button rounded-2xl px-4 py-3 text-sm leading-relaxed">
+          {feedbackMessage}
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <div>

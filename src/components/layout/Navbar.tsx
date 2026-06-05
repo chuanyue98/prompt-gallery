@@ -173,6 +173,8 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
             </div>
 
             <button
+              type="button"
+              aria-label="打开投稿弹层"
               onClick={() => setIsContributeOpen(true)}
               className="primary-btn"
             >
