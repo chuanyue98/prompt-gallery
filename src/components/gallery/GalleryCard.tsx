@@ -79,7 +79,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
             muted
             loop
             playsInline
-            preload="auto"
+            preload="metadata"
             poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
           />
         ) : coverUrl ? (
