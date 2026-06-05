@@ -106,7 +106,8 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
               <button
                 type="button"
                 onClick={prevMedia}
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100"
+                aria-label="Previous media"
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -115,7 +116,8 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
               <button
                 type="button"
                 onClick={nextMedia}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100"
+                aria-label="Next media"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -129,6 +131,8 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
 
           {!submitSuccess && (
             <button 
+              type="button"
+              title="清除当前媒体"
               onClick={() => {
                 if (file) onClearFile();
                 else if (mediaUrls.length > 0) onClearMediaUrl();

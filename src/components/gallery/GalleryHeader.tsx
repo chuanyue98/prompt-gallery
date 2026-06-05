@@ -56,6 +56,7 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
         <div className="search search-inline">
           <input
             data-testid="gallery-search"
+            aria-label="筛选图库内容"
             type="text"
             value={search}
             placeholder="搜索灵感 (SEARCH INSPIRATION)..."

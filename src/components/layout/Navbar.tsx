@@ -137,7 +137,6 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
                 className="theme-trigger-lite"
               >
                 <span className="hidden sm:block">THEME</span>
-                <span className="hidden sm:inline">Theme</span>
                 <span>{THEME_OPTIONS.find((option) => option.id === theme)?.label}</span>
                 <IconChevronDown />
               </button>

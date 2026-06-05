@@ -102,11 +102,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   return (
     <div className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button aria-label="关闭投稿弹层" className="modal-close" onClick={onClose}>
+        <button aria-label="关闭详情弹层" className="modal-close" onClick={onClose}>
           <IconX />
         </button>
 
-        <div className="modal-media group relative cursor-zoom-in" onClick={onLightboxOpen}>
+        <div className={`modal-media group relative cursor-zoom-in ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
           {mediaUrl ? (
             isVideo ? (
               <video
@@ -124,7 +124,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={mediaUrl} src={coverUrl} alt={item.description || item.title || item.slug} />
+              <img key={mediaUrl} src={mediaUrl} alt={item.description || item.title || item.slug} />
             )
           ) : (
             <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
@@ -160,7 +160,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </>
           )}
 
-          {!isVideo ? <div data-testid="mobile-fullscreen-hint" className="modal-play">Fullscreen</div> : null}
+          {!isVideo ? (
+            <button
+              type="button"
+              data-testid="mobile-fullscreen-hint"
+              aria-label="放大查看媒体"
+              className="modal-play"
+              onClick={(e) => {
+                e.stopPropagation();
+                onLightboxOpen();
+              }}
+            >
+              放大查看
+            </button>
+          ) : null}
         </div>
 
         <div className="modal-side">
