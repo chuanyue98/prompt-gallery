@@ -228,6 +228,22 @@ describe('POST handler integration', () => {
     expect(prData.indexMd).toContain('model: "GPT-Image 2"');
   });
 
+  it('ignores non-string model fields without crashing', async () => {
+    const formData = new FormData();
+    formData.append('title', 'T');
+    formData.append('prompt', 'P');
+    formData.append('model', new Blob(['bad'], { type: 'text/plain' }), 'model.txt');
+    formData.append('mediaUrl', 'https://example.com/a.png');
+    (createContributionPullRequest as Mock).mockResolvedValue({ html_url: 'url' });
+
+    const req = new NextRequest('http://localhost/api/contribute', { method: 'POST', body: formData });
+    mockFormDataRequest(req, formData);
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const prData = (createContributionPullRequest as Mock).mock.calls[0][2];
+    expect(prData.indexMd).toContain('model: ""');
+  });
+
   it('follows safe media redirects', async () => {
     vi.mocked(global.fetch as Mock)
       .mockResolvedValueOnce({

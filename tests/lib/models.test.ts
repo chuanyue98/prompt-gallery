@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeModelName } from '@/lib/models';
+import { buildModelOptions, normalizeModelName } from '@/lib/models';
 
 describe('model normalization', () => {
   it('normalizes common model aliases and typos', () => {
@@ -20,5 +20,17 @@ describe('model normalization', () => {
 
   it('preserves unknown model names with trimmed spacing', () => {
     expect(normalizeModelName('  Custom   Model  ')).toBe('Custom Model');
+  });
+
+  it('ignores non-string values defensively', () => {
+    expect(normalizeModelName(undefined)).toBe('');
+    expect(normalizeModelName(new File(['x'], 'model.txt'))).toBe('');
+  });
+
+  it('merges existing model names into suggestions', () => {
+    expect(buildModelOptions(['Gemini 2.5 Flash Image', 'GPT-image-2'])).toEqual(expect.arrayContaining([
+      'GPT-Image 2',
+      'Gemini 2.5 Flash Image',
+    ]));
   });
 });

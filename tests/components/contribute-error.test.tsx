@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import ContributeModal from '@/components/gallery/ContributeModal';
 import { ContributeForm } from '@/components/gallery/ContributeForm';
@@ -155,13 +156,43 @@ describe('ContributeForm direct tests', () => {
       />
     );
 
-    expect(document.querySelector('datalist option[value="GPT-Image 2"]')).toBeInTheDocument();
-
     await user.type(screen.getByPlaceholderText('选择或输入模型'), 'Sora');
     expect(setFormData).toHaveBeenCalled();
 
     await user.type(screen.getByPlaceholderText('科幻, 电影感, 写实'), 'sci-fi');
     expect(setFormData).toHaveBeenCalled();
+  });
+
+  it('filters model suggestions as the user types', async () => {
+    const user = userEvent.setup();
+
+    function FormWrapper() {
+      const [formData, setFormData] = useState(defaultFormData);
+
+      return (
+        <ContributeForm
+          formData={formData}
+          setFormData={setFormData}
+          submissionMode="upload"
+          setSubmissionMode={vi.fn()}
+          onSubmit={vi.fn()}
+          isSubmitting={false}
+          canSubmit={false}
+          onClearFileAndPreview={vi.fn()}
+          onParseLink={vi.fn()}
+          isParsing={false}
+          modelOptions={['GPT-Image 2', 'Gemini 2.5 Flash Image', 'Sora']}
+        />
+      );
+    }
+
+    render(<FormWrapper />);
+
+    await user.type(screen.getByPlaceholderText('选择或输入模型'), 'G');
+
+    expect(screen.getByRole('option', { name: 'GPT-Image 2' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Gemini 2.5 Flash Image' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Sora' })).not.toBeInTheDocument();
   });
 
   it('updates description and sourceUrl fields', async () => {

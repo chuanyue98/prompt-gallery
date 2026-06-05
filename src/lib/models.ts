@@ -32,10 +32,28 @@ function normalizeSingleModelName(value: string) {
   return MODEL_ALIASES.get(modelKey(trimmed)) ?? trimmed;
 }
 
-export function normalizeModelName(value: string) {
+export function normalizeModelName(value: unknown) {
+  if (typeof value !== 'string') return '';
+
   return value
     .split('/')
     .map(normalizeSingleModelName)
     .filter(Boolean)
     .join(' / ');
+}
+
+export function buildModelOptions(existingModels: Iterable<unknown> = []) {
+  const seen = new Set<string>();
+  const options: string[] = [];
+
+  for (const model of [...MODEL_OPTIONS, ...existingModels]) {
+    const normalized = normalizeModelName(model);
+    const key = modelKey(normalized);
+    if (!normalized || seen.has(key)) continue;
+
+    seen.add(key);
+    options.push(normalized);
+  }
+
+  return options;
 }

@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import ContributePreview from './ContributePreview';
 import ContributeForm from './ContributeForm';
 import ContributeSuccess from './ContributeSuccess';
+import { buildModelOptions } from '@/lib/models';
 
 interface ContributeModalProps {
   isOpen: boolean;
@@ -61,6 +62,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
   const [submitSuccess, setSubmissionSuccess] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [modelOptions, setModelOptions] = useState<string[]>(() => buildModelOptions());
 
   const handleClose = useCallback(() => {
     setFeedbackMessage(null);
@@ -74,6 +76,19 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       }
     };
   }, [preview]);
+
+  const loadModelOptions = useCallback(async () => {
+    try {
+      const response = await fetch('/gallery-data.json');
+      if (!response.ok) return;
+
+      const data = await response.json() as { model?: unknown }[];
+      const existingModels = Array.isArray(data) ? data.map((item) => item.model) : [];
+      setModelOptions(buildModelOptions(existingModels));
+    } catch {
+      // Keep the built-in options when gallery data is unavailable.
+    }
+  }, []);
 
   const handleParseLink = useCallback(async (url: string) => {
     if (!url) return;
@@ -269,6 +284,8 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               onParseLink={handleParseLink}
               isParsing={isParsing}
               feedbackMessage={feedbackMessage}
+              modelOptions={modelOptions}
+              onLoadModelOptions={loadModelOptions}
             />
           )}
         </div>
