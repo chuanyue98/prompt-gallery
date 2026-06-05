@@ -6,7 +6,7 @@ description: "模板解决了以下几个问题：
 - 自定义程度低
 - 氛围感不强"
 tags: ["写实"]
-model: "GPT-image-2"
+model: "GPT-Image 2"
 sourceUrl: "https://x.com/liyue_ai/status/2058846412453134435"
 media:
   - type: "image"

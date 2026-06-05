@@ -2,7 +2,7 @@
 title: "皮克斯风格表情包九宫格"
 description: "皮克斯3D头像+九种表情+破纸圆框+多套服装+色彩鲜艳。适合3D角色设计、表情包制作、社交媒体贴纸。"
 tags: ["皮克斯", "九宫格"]
-model: "NanoBananoPro"
+model: "Nano Banana Pro"
 sourceUrl: "https://x.com/crayon1267/status/2045669412624318715"
 media:
   - type: "image"

@@ -2,7 +2,7 @@
 title: "通用图解百科全书科学信息图"
 description: "通用图解百科全书科学信息图内置了动物、植物、人物等，超高密度信息图配合GTP-Image来做知识科普再适合不过了"
 tags: ["图解"]
-model: "GTP-Image 2"
+model: "GPT-Image 2"
 sourceUrl: "https://x.com/GeekCatX/status/2046145934963376239"
 media:
   - type: "image"

@@ -155,7 +155,9 @@ describe('ContributeForm direct tests', () => {
       />
     );
 
-    await user.type(screen.getByPlaceholderText('Seedance 2.0'), 'Sora');
+    expect(document.querySelector('datalist option[value="GPT-Image 2"]')).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('选择或输入模型'), 'Sora');
     expect(setFormData).toHaveBeenCalled();
 
     await user.type(screen.getByPlaceholderText('科幻, 电影感, 写实'), 'sci-fi');

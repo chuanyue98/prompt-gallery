@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { MODEL_OPTIONS, normalizeModelName } from '@/lib/models';
 
 interface FormData {
   title: string;
@@ -79,7 +80,19 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">模型 (Engine)</label>
-            <input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="Seedance 2.0" />
+            <input
+              value={formData.model}
+              list="model-options"
+              onChange={e => setFormData({...formData, model: e.target.value})}
+              onBlur={e => setFormData({...formData, model: normalizeModelName(e.target.value)})}
+              className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm"
+              placeholder="选择或输入模型"
+            />
+            <datalist id="model-options">
+              {MODEL_OPTIONS.map((model) => (
+                <option key={model} value={model} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标签 (逗号分隔)</label>

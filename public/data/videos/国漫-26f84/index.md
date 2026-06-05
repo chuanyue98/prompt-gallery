@@ -2,7 +2,7 @@
 title: "国漫"
 description: ""
 tags: ["动画"]
-model: "Seedance2.0 Fast  "
+model: "Seedance 2.0 Fast"
 media:
   - type: "video"
     src: "media-file.mp4"
