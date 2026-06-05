@@ -57,3 +57,12 @@ export function buildModelOptions(existingModels: Iterable<unknown> = []) {
 
   return options;
 }
+
+export function modelMatchesQuery(model: string, query: string) {
+  const modelSearchKey = modelKey(model);
+  const querySearchKey = modelKey(query);
+
+  if (!querySearchKey) return true;
+
+  return modelSearchKey.includes(querySearchKey);
+}

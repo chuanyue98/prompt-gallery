@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MODEL_OPTIONS, normalizeModelName } from '@/lib/models';
+import { MODEL_OPTIONS, modelMatchesQuery, normalizeModelName } from '@/lib/models';
 
 interface FormData {
   title: string;
@@ -45,9 +45,9 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   onLoadModelOptions,
 }) => {
   const [isModelFocused, setIsModelFocused] = React.useState(false);
-  const modelQuery = formData.model.trim().toLowerCase();
+  const modelQuery = formData.model.trim();
   const filteredModelOptions = modelOptions
-    .filter((model) => !modelQuery || model.toLowerCase().includes(modelQuery))
+    .filter((model) => modelMatchesQuery(model, modelQuery))
     .slice(0, 8);
 
   return (

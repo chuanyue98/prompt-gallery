@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildModelOptions, normalizeModelName } from '@/lib/models';
+import { buildModelOptions, modelMatchesQuery, normalizeModelName } from '@/lib/models';
 
 describe('model normalization', () => {
   it('normalizes common model aliases and typos', () => {
@@ -32,5 +32,12 @@ describe('model normalization', () => {
       'GPT-Image 2',
       'Gemini 2.5 Flash Image',
     ]));
+  });
+
+  it('matches model queries case-insensitively while preserving order', () => {
+    expect(modelMatchesQuery('GPT-Image 2', 'p')).toBe(true);
+    expect(modelMatchesQuery('p-image', 'P')).toBe(true);
+    expect(modelMatchesQuery('GPT-Image 2', 'gpt')).toBe(true);
+    expect(modelMatchesQuery('GPT-Image 2', 'ig')).toBe(false);
   });
 });
