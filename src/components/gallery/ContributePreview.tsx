@@ -107,7 +107,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
                 type="button"
                 onClick={prevMedia}
                 aria-label="Previous media"
-                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -117,7 +117,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
                 type="button"
                 onClick={nextMedia}
                 aria-label="Next media"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
