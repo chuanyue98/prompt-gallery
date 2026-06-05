@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ContributePreview from './ContributePreview';
 import ContributeForm from './ContributeForm';
 import ContributeSuccess from './ContributeSuccess';
@@ -66,6 +66,14 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     setFeedbackMessage(null);
     onClose();
   }, [onClose]);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.startsWith('blob:') && typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   const handleParseLink = useCallback(async (url: string) => {
     if (!url) return;

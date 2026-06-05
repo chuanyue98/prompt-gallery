@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
-import { filterGalleryItems, getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
+import { filterGalleryItems, getGalleryMediaUrl, isExternalUrl, isVideoAsset } from '@/lib/gallery';
 
 import GalleryHeader from './GalleryHeader';
 import GalleryCard from './GalleryCard';
@@ -49,7 +49,7 @@ function Hero({
           fill
           priority
           sizes="100vw"
-          unoptimized
+          unoptimized={isExternalUrl(coverUrl)}
         />
       ) : null}
       <div className="hero-grad" />
