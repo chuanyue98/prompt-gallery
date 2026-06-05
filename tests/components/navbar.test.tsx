@@ -89,6 +89,18 @@ describe('Navbar component', () => {
     expect(onSearchChange).toHaveBeenLastCalledWith('cat');
   });
 
+  it('keeps local search editable when only onSearchChange is provided', async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    render(<Navbar onSearchChange={onSearchChange} />);
+
+    const input = screen.getByPlaceholderText('搜索标题、模型、标签或提示词...') as HTMLInputElement;
+    await user.type(input, 'cat');
+
+    expect(input.value).toBe('cat');
+    expect(onSearchChange).toHaveBeenLastCalledWith('cat');
+  });
+
   it('opens and closes contribute modal when button is clicked', async () => {
     const user = userEvent.setup();
     render(<Navbar />);

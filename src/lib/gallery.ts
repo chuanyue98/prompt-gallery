@@ -25,7 +25,7 @@ export function filterGalleryItems(items: GalleryItem[], search: string, categor
       item.description,
       item.model,
       item.content,
-      ...item.tags,
+      ...(item.tags ?? []),
     ]
       .filter(Boolean)
       .join(' ')

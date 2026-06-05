@@ -79,10 +79,11 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
   };
 
   const handleSearchChange = (value: string) => {
+    if (search === undefined) {
+      setLocalSearch(value);
+    }
     if (onSearchChange) {
       onSearchChange(value);
-    } else {
-      setLocalSearch(value);
     }
   };
 

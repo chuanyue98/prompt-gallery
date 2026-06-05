@@ -193,7 +193,14 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
   }, [deleteReason]);
 
   const search = controlledSearch ?? internalSearch;
-  const setSearch = onSearchChange ?? setInternalSearch;
+  const setSearch = (value: string) => {
+    if (controlledSearch === undefined) {
+      setInternalSearch(value);
+    }
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+  };
   const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
   const heroItem = filteredItems.length > 0 ? filteredItems[0] : null;
 
