@@ -76,6 +76,8 @@ describe('Gallery component helpers', () => {
     expect(filterGalleryItems(galleryItems, '', 'invalid' as unknown as 'all')).toHaveLength(0);
     // description-match branch: 'lighting' is not in any tag but is in image-item description
     expect(filterGalleryItems(galleryItems, 'lighting', 'all')).toHaveLength(1);
+    expect(filterGalleryItems(galleryItems, 'sora', 'all')).toHaveLength(1);
+    expect(filterGalleryItems(galleryItems, 'Fast car', 'all')).toHaveLength(1);
   });
 
 
@@ -90,6 +92,11 @@ describe('Gallery component helpers', () => {
   it('gracefully handles items without media', () => {
     expect(filterGalleryItems([emptyMediaItem], '', 'all')).toHaveLength(1);
     expect(filterGalleryItems([emptyMediaItem], '', 'image')).toHaveLength(0);
+  });
+
+  it('handles items without tags while searching', () => {
+    const itemWithoutTags = { ...emptyMediaItem, tags: undefined } as unknown as GalleryItem;
+    expect(filterGalleryItems([itemWithoutTags], 'Broken', 'all')).toHaveLength(1);
   });
 
   it('isExternalUrl and isVideoAsset handle branches', () => {
@@ -153,6 +160,33 @@ describe('Gallery component', () => {
     expect(video).toHaveAttribute('src', '/media/video-item/clip.mp4');
     expect(video).toHaveProperty('muted', true);
     expect(video).toHaveProperty('loop', true);
+  });
+
+  it('filters gallery from the top navigation search', async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('搜索标题、模型、标签或提示词...'), 'gpt-image-1');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '打开作品详情: video-item' })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: '打开作品详情: image-item' })).toBeInTheDocument();
+  });
+
+  it('keeps internal search working when only onSearchChange is provided', async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    render(<Gallery onSearchChange={onSearchChange} />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'), 'gpt-image-1');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '打开作品详情: video-item' })).not.toBeInTheDocument();
+    });
+    expect(onSearchChange).toHaveBeenLastCalledWith('gpt-image-1');
   });
 
   it('renders image hero for image items', async () => {
@@ -482,9 +516,14 @@ describe('DetailModal direct tests', () => {
     expect(screen.getByText('COPIED ✓')).toBeInTheDocument();
   });
 
-  it('shows VIEW SOURCE link when sourceUrl is present', () => {
+  it('shows Source link when sourceUrl is present', () => {
     render(<DetailModal item={galleryItems[1]} {...baseProps} />);
-    expect(screen.getByRole('link', { name: 'VIEW SOURCE' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Source' })).toHaveAttribute('href', 'https://example.com/source');
+  });
+
+  it('does not render unsafe Source links', () => {
+    render(<DetailModal item={{ ...galleryItems[1], sourceUrl: 'javascript:alert(1)' }} {...baseProps} />);
+    expect(screen.queryByRole('link', { name: 'Source' })).not.toBeInTheDocument();
   });
 
   it('shows delete form and cancel button works', async () => {

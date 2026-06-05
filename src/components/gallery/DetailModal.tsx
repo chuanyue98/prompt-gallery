@@ -70,17 +70,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const currentMedia = item.media[currentMediaIndex] || item.media[0];
   const mediaUrl = getGalleryMediaUrl(item, 'src', currentMediaIndex);
   const coverUrl = getGalleryMediaUrl(item, 'cover', currentMediaIndex);
+  const tags = item.tags ?? [];
+  const sourceUrl = item.sourceUrl?.trim() || '';
+  const safeSourceUrl = /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '';
   
   const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
   const isCopied = copiedSlug === 'modal';
   const cleanedPrompt = item.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim();
   const likes = cleanedPrompt.length * 17;
-  const saves = Math.max(item.tags.length * 41, 12);
+  const saves = Math.max(tags.length * 41, 12);
   const promptWordCount = cleanedPrompt.split(/\s+/).filter(Boolean).length;
   const promptParams = [
     ['Media', isVideo ? 'Video' : 'Image'],
     ['Model', item.model ?? 'Prompt'],
-    ['Tags', item.tags.length ? item.tags.join(', ') : 'None'],
+    ['Tags', tags.length ? tags.join(', ') : 'None'],
     ['Words', String(promptWordCount)],
   ];
 
@@ -176,9 +179,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <div className="avatar lg">{String(item.title || item.slug).slice(0, 2).toUpperCase()}</div>
               <div>
                 <div className="aname">{item.model ?? 'Prompt Archive'}</div>
-                <div className="acat">{isVideo ? 'Video' : 'Image'} / {item.tags[0] ?? 'Reference'}</div>
+                <div className="acat">{isVideo ? 'Video' : 'Image'} / {tags[0] ?? 'Reference'}</div>
               </div>
-              <button className="follow-btn" type="button">Source</button>
+              {safeSourceUrl ? (
+                <a href={safeSourceUrl} target="_blank" rel="noreferrer" className="follow-btn">Source</a>
+              ) : null}
             </div>
 
             <div className="prompt-block">
@@ -215,12 +220,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 <IconCopy /> {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
               </button>
             </div>
-
-            {item.sourceUrl ? (
-              <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="copy-inline">
-                VIEW SOURCE
-              </a>
-            ) : null}
 
             <div className="mt-auto pt-2">
               {deleteSuccess ? (

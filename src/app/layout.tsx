@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       data-theme="cream-warm"
       suppressHydrationWarning
       className="h-full antialiased"

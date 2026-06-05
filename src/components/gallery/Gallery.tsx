@@ -70,11 +70,16 @@ function Hero({
   );
 }
 
-export default function Gallery() {
+interface GalleryProps {
+  search?: string;
+  onSearchChange?: (value: string) => void;
+}
+
+export default function Gallery({ search: controlledSearch, onSearchChange }: GalleryProps = {}) {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [internalSearch, setInternalSearch] = useState('');
   const [category, setCategory] = useState<'all' | 'video' | 'image'>('all');
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -187,6 +192,15 @@ export default function Gallery() {
     }
   }, [deleteReason]);
 
+  const search = controlledSearch ?? internalSearch;
+  const setSearch = (value: string) => {
+    if (controlledSearch === undefined) {
+      setInternalSearch(value);
+    }
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
+  };
   const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
   const heroItem = filteredItems.length > 0 ? filteredItems[0] : null;
 
