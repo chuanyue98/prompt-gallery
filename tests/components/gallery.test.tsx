@@ -382,6 +382,7 @@ describe('GalleryCard direct tests', () => {
   it('triggers video mouseEnter and mouseLeave handlers', () => {
     render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
     const videos = document.querySelectorAll('video');
+    expect(videos[0]).toHaveAttribute('preload', 'metadata');
     // The hover overlay video (second video) has the mouse handlers
     if (videos.length > 1) {
       fireEvent.mouseEnter(videos[1]);
