@@ -105,7 +105,7 @@ describe('Navbar component', () => {
     const user = userEvent.setup();
     render(<Navbar />);
 
-    const btn = screen.getByRole('button', { name: /\+/ });
+    const btn = screen.getByRole('button', { name: '打开投稿弹层' });
     await user.click(btn);
 
     await waitFor(() => {
@@ -123,7 +123,7 @@ describe('Navbar component', () => {
     render(<Navbar />);
     
     // 检查投稿按钮的精简类
-    const contributeBtn = screen.getByRole('button', { name: /\+/ });
+    const contributeBtn = screen.getByRole('button', { name: '打开投稿弹层' });
     expect(contributeBtn.querySelector('.hidden.sm\\:inline')).toHaveTextContent('我要投稿');
     
     // 检查 Logo 文字的精简类

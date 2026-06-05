@@ -8,27 +8,23 @@ import ContributeSuccess from '@/components/gallery/ContributeSuccess';
 
 describe('ContributeModal validation and errors', () => {
   it('shows validation error if title is empty', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<ContributeModal isOpen onClose={() => {}} />);
     
     const form = screen.getByTestId('contribute-modal-shell').querySelector('form')!;
     fireEvent.submit(form);
     
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('请填写作品标题'));
-    alertSpy.mockRestore();
+    expect(await screen.findByRole('alert')).toHaveTextContent('请填写作品标题');
   });
 
   it('shows error when both file and mediaUrl are missing', async () => {
     const user = userEvent.setup();
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<ContributeModal isOpen onClose={() => {}} />);
     
     await user.type(screen.getByPlaceholderText('例如：赛博朋克猫咪'), 'My Title');
     const form = screen.getByTestId('contribute-modal-shell').querySelector('form')!;
     fireEvent.submit(form);
     
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('二选一'));
-    alertSpy.mockRestore();
+    expect(await screen.findByRole('alert')).toHaveTextContent('二选一');
   });
 
   it('successfully submits with valid data and file', async () => {
@@ -55,7 +51,6 @@ describe('ContributeModal validation and errors', () => {
 
   it('shows readable error when API returns non-JSON 413 text', async () => {
     const user = userEvent.setup();
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       status: 413,
       headers: new Headers({ 'content-type': 'text/plain' }),
@@ -71,16 +66,14 @@ describe('ContributeModal validation and errors', () => {
 
     await user.click(screen.getByRole('button', { name: '立即提交 (SUBMIT)' }));
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('上传文件过大')));
-    expect(alertSpy).not.toHaveBeenCalledWith(expect.stringContaining('Unexpected token'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('上传文件过大'));
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Unexpected token');
 
-    alertSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 
   it('rejects oversized uploads before submitting', async () => {
     const user = userEvent.setup();
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
 
@@ -90,10 +83,9 @@ describe('ContributeModal validation and errors', () => {
     const input = screen.getByTestId('contribute-modal-shell').querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, file);
 
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('文件过大'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('文件过大');
     expect(fetchSpy).not.toHaveBeenCalled();
 
-    alertSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 

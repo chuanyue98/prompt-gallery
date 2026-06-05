@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import type { GalleryItem } from '@/types/gallery';
 import { copyToClipboard } from '@/lib/utils';
 import { filterGalleryItems, getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
@@ -41,7 +42,15 @@ function Hero({
           poster={coverUrl && !isVideoAsset(coverUrl) ? coverUrl : undefined}
         />
       ) : coverUrl ? (
-        <img data-testid="hero-image" src={coverUrl} alt={item.title || item.slug} />
+        <Image
+          data-testid="hero-image"
+          src={coverUrl}
+          alt={item.title || item.slug}
+          fill
+          priority
+          sizes="100vw"
+          unoptimized
+        />
       ) : null}
       <div className="hero-grad" />
       <div className="hero-content">

@@ -60,9 +60,16 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
   const [isParsing, setIsParsing] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'upload' | 'mediaUrl'>('upload');
   const [submitSuccess, setSubmissionSuccess] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setFeedbackMessage(null);
+    onClose();
+  }, [onClose]);
 
   const handleParseLink = useCallback(async (url: string) => {
     if (!url) return;
+    setFeedbackMessage(null);
     setIsParsing(true);
     try {
       const response = await fetch('/api/parse-link', {
@@ -92,7 +99,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '解析失败';
-      alert('❌ 解析失败：' + message);
+      setFeedbackMessage(`解析失败：${message}`);
     } finally {
       setIsParsing(false);
     }
@@ -102,11 +109,12 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
-        alert(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
+        setFeedbackMessage(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
         e.target.value = '';
         return;
       }
 
+      setFeedbackMessage(null);
       setSubmissionMode('upload');
       setFormData((current) => ({ ...current, mediaUrls: [] }));
       setFile(selectedFile);
@@ -129,19 +137,20 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
     e.preventDefault();
     const hasFile = Boolean(file);
     const hasMediaUrls = formData.mediaUrls.length > 0;
+    setFeedbackMessage(null);
 
     if (!formData.title.trim()) {
-      alert('请填写作品标题。');
+      setFeedbackMessage('请填写作品标题。');
       return;
     }
 
     if ((hasFile && hasMediaUrls) || (!hasFile && !hasMediaUrls)) {
-      alert('请在上传图片/视频与填写 mediaUrl 之间二选一。');
+      setFeedbackMessage('请在上传图片/视频与填写 Media URL 之间二选一。');
       return;
     }
 
     if (file && file.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
-      alert(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
+      setFeedbackMessage(`文件过大，请压缩到 ${formatUploadLimit()} 以内，或改用 Media URL 投稿。`);
       return;
     }
 
@@ -173,6 +182,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
         setTimeout(() => {
           onClose();
           setSubmissionSuccess(null);
+          setFeedbackMessage(null);
           setFile(null);
           setPreview(null);
           setFormData({ title: '', description: '', prompt: '', tags: '', model: '', mediaUrls: [], sourceUrl: '' });
@@ -183,7 +193,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '未知错误';
-      alert('❌ 提交失败：' + message);
+      setFeedbackMessage(`提交失败：${message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -209,7 +219,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
 
         <div className="w-full md:w-1/2 p-6 sm:p-10 flex flex-col overflow-hidden">
           <div className="mb-4 sm:mb-2 flex justify-end shrink-0">
-            <button aria-label="关闭投稿弹层" type="button" onClick={onClose} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full">✕</button>
+            <button aria-label="关闭投稿弹层" type="button" onClick={handleClose} className="theme-secondary-button flex h-10 w-10 items-center justify-center rounded-full">✕</button>
           </div>
 
           {submitSuccess ? (
@@ -250,6 +260,7 @@ export default function ContributeModal({ isOpen, onClose }: ContributeModalProp
               onClearFileAndPreview={handleClearFile}
               onParseLink={handleParseLink}
               isParsing={isParsing}
+              feedbackMessage={feedbackMessage}
             />
           )}
         </div>

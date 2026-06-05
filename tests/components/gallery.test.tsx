@@ -214,9 +214,6 @@ describe('Gallery component', () => {
   });
 
   it('handles submission error with non-Error object', async () => {
-
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
     // Mock fetch to reject with a string
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue('String Error'));
     
@@ -240,7 +237,7 @@ describe('Gallery component', () => {
       fireEvent.click(submitBtn);
     });
 
-    expect(alertMock).toHaveBeenCalledWith('❌ 提交失败：未知错误');
+    expect(await screen.findByRole('alert')).toHaveTextContent('提交失败：未知错误');
     vi.unstubAllGlobals();
   });
 
@@ -267,8 +264,6 @@ describe('Gallery component', () => {
   });
 
   it('handles validation alert branch by manually triggering submit', async () => {
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
     render(<ContributeModal isOpen={true} onClose={() => {}} />);
     
     const titleInput = screen.getByPlaceholderText('例如：赛博朋克猫咪');
@@ -281,8 +276,7 @@ describe('Gallery component', () => {
     await act(async () => {
       fireEvent.submit(form);
     });
-    expect(alertMock).toHaveBeenCalledWith('请在上传图片/视频与填写 mediaUrl 之间二选一。');
-    vi.unstubAllGlobals();
+    expect(await screen.findByRole('alert')).toHaveTextContent('二选一');
   });
 
   it('switches between themes', async () => {
