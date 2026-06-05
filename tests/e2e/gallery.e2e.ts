@@ -30,13 +30,6 @@ test('contribute modal filters model suggestions and switches media URL mode', a
   await page.goto('/');
   await expect(page.getByRole('button', { name: /打开作品详情:/ }).first()).toBeVisible();
 
-  await page.route('**/gallery-data.json', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify([{ model: 'Seedance 2.0 / Midjourney' }]),
-    });
-  });
-
   await page.getByRole('button', { name: '打开投稿弹层' }).click();
 
   const modelInput = page.getByPlaceholder('选择或输入模型');
@@ -49,9 +42,10 @@ test('contribute modal filters model suggestions and switches media URL mode', a
   await expect(page.getByRole('option', { name: 'GPT-Image 2' })).toBeHidden();
 
   await modelInput.fill('mid');
-  await expect(page.getByRole('option', { name: 'Seedance 2.0 / Midjourney' })).toBeVisible();
-  await page.getByRole('option', { name: 'Seedance 2.0 / Midjourney' }).click();
-  await expect(modelInput).toHaveValue('Seedance 2.0 / Midjourney');
+  const midjourneyOption = page.getByRole('option', { name: 'Midjourney', exact: true });
+  await expect(midjourneyOption).toBeVisible();
+  await midjourneyOption.click();
+  await expect(modelInput).toHaveValue('Midjourney');
 
   await page.getByRole('button', { name: 'Media URL' }).click();
   await expect(page.getByPlaceholder('https://example.com/your-image.png')).toBeVisible();
