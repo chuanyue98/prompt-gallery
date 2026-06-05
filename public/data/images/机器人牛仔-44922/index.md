@@ -2,7 +2,7 @@
 title: "机器人牛仔"
 description: ""
 tags: []
-model: "GPT-image-2"
+model: "GPT-Image 2"
 media:
   - type: "image"
     src: "ChatGPT Image 2026年5月22日 15_03_17.png"

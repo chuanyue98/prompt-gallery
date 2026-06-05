@@ -10,6 +10,7 @@ import {
   MediaType
 } from '@/lib/github';
 import { randomHex5 } from '@/lib/utils';
+import { normalizeModelName } from '@/lib/models';
 
 export function isHttpOrHttpsUrl(value: string) {
   try {
@@ -323,7 +324,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
   const description = (formData.get('description') as string) || '';
   const prompt = (formData.get('prompt') as string) || '';
   const tags = (formData.get('tags') as string) || '';
-  const model = (formData.get('model') as string) || '';
+  const model = normalizeModelName(formData.get('model'));
   const sourceUrl = ((formData.get('sourceUrl') as string) || '').trim();
 
   const files: File[] = [];

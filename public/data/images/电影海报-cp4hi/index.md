@@ -2,7 +2,7 @@
 title: "电影海报"
 description: ""
 tags: ["海报"]
-model: "GPT-IMAGE-2"
+model: "GPT-Image 2"
 sourceUrl: "https://x.com/VoxcatAI/status/2047934920962851146"
 media:
   - type: "image"

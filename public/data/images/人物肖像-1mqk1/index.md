@@ -2,7 +2,7 @@
 title: "人物肖像"
 description: ""
 tags: ["肖像"]
-model: "GPT-Image-2"
+model: "GPT-Image 2"
 sourceUrl: "https://x.com/wanerfu/status/2046845192490418688"
 media:
   - type: "image"

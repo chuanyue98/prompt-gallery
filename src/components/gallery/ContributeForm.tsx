@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { MODEL_OPTIONS, modelMatchesQuery, normalizeModelName } from '@/lib/models';
 
 interface FormData {
   title: string;
@@ -24,6 +25,8 @@ interface ContributeFormProps {
   onParseLink: (url: string) => Promise<void>;
   isParsing: boolean;
   feedbackMessage?: string | null;
+  modelOptions?: string[];
+  onLoadModelOptions?: () => void | Promise<void>;
 }
 
 export const ContributeForm: React.FC<ContributeFormProps> = ({
@@ -38,7 +41,15 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
   onParseLink,
   isParsing,
   feedbackMessage,
+  modelOptions = [...MODEL_OPTIONS],
+  onLoadModelOptions,
 }) => {
+  const [isModelFocused, setIsModelFocused] = React.useState(false);
+  const modelQuery = formData.model.trim();
+  const filteredModelOptions = modelOptions
+    .filter((model) => modelMatchesQuery(model, modelQuery))
+    .slice(0, 8);
+
   return (
     <form onSubmit={onSubmit} className="space-y-5 sm:space-y-6 flex-grow overflow-y-auto pr-2 custom-scrollbar">
       <div className="theme-panel inline-flex rounded-2xl p-1" data-testid="contribute-mode-switcher">
@@ -77,9 +88,45 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">模型 (Engine)</label>
-            <input value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="Seedance 2.0" />
+            <input
+              value={formData.model}
+              role="combobox"
+              aria-expanded={isModelFocused && filteredModelOptions.length > 0}
+              aria-controls="model-options"
+              onChange={e => setFormData({...formData, model: e.target.value})}
+              onBlur={e => {
+                setFormData({...formData, model: normalizeModelName(e.target.value)});
+                setIsModelFocused(false);
+              }}
+              onFocus={() => {
+                setIsModelFocused(true);
+                void onLoadModelOptions?.();
+              }}
+              className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm"
+              placeholder="选择或输入模型"
+            />
+            {isModelFocused && filteredModelOptions.length > 0 ? (
+              <div id="model-options" role="listbox" className="theme-panel absolute left-0 right-0 top-full z-20 mt-2 max-h-48 overflow-y-auto rounded-xl p-1 shadow-xl">
+                {filteredModelOptions.map((model) => (
+                  <button
+                    key={model}
+                    type="button"
+                    role="option"
+                    aria-selected={model === formData.model}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setFormData({ ...formData, model });
+                      setIsModelFocused(false);
+                    }}
+                    className="theme-option-item block w-full rounded-lg px-3 py-2 text-left text-sm"
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div>
             <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标签 (逗号分隔)</label>
