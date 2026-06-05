@@ -2,7 +2,7 @@
 title: "人物写实素描"
 description: "上传人物图生成素描风格图片"
 tags: ["素描，写实"]
-model: "GPT-Image 2"
+model: "p-image"
 media:
   - type: "image"
     src: "p-image_b_Create_a_vertical_3_.jpeg"

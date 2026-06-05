@@ -6,9 +6,12 @@ describe('model normalization', () => {
     expect(normalizeModelName('GPT-image-2')).toBe('GPT-Image 2');
     expect(normalizeModelName('GPT-IMAGE-2')).toBe('GPT-Image 2');
     expect(normalizeModelName('GTP-Image 2')).toBe('GPT-Image 2');
-    expect(normalizeModelName('p-image')).toBe('GPT-Image 2');
     expect(normalizeModelName('NanoBananoPro')).toBe('Nano Banana Pro');
     expect(normalizeModelName('Seedance2.0 Fast  ')).toBe('Seedance 2.0 Fast');
+  });
+
+  it('preserves p-image as its own model', () => {
+    expect(normalizeModelName('p-image')).toBe('p-image');
   });
 
   it('normalizes slash-separated model combinations', () => {

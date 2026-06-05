@@ -1,6 +1,7 @@
 export const MODEL_OPTIONS = [
   'GPT-Image 2',
   'GPT-Image 1',
+  'p-image',
   'Nano Banana Pro',
   'Seedance 2.0 Fast',
   'Seedance 2.0',
@@ -11,7 +12,6 @@ export const MODEL_OPTIONS = [
 const MODEL_ALIASES = new Map<string, string>([
   ['gptimage2', 'GPT-Image 2'],
   ['gtpimage2', 'GPT-Image 2'],
-  ['pimage', 'GPT-Image 2'],
   ['gptimage1', 'GPT-Image 1'],
   ['nanobananopro', 'Nano Banana Pro'],
   ['nanobananapro', 'Nano Banana Pro'],
