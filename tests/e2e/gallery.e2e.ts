@@ -28,6 +28,14 @@ test('contribute modal reports validation inline', async ({ page }) => {
 
 test('contribute modal filters model suggestions and switches media URL mode', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('button', { name: /打开作品详情:/ }).first()).toBeVisible();
+
+  await page.route('**/gallery-data.json', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify([{ model: 'Seedance 2.0 / Midjourney' }]),
+    });
+  });
 
   await page.getByRole('button', { name: '打开投稿弹层' }).click();
 
@@ -72,8 +80,7 @@ test('contribute modal previews and clears uploaded files', async ({ page }) => 
 test('detail modal image lightbox opens and closes', async ({ page }) => {
   await page.goto('/');
 
-  await page.getByPlaceholder('搜索标题、模型、标签或提示词...').fill('p-image');
-  const imageCard = page.getByRole('button', { name: /打开作品详情:/ }).first();
+  const imageCard = page.getByTestId('gallery-card-人物写实素描-9djd0');
   await expect(imageCard).toBeVisible();
   await imageCard.click();
 
