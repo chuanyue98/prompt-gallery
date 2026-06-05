@@ -17,11 +17,20 @@ export function getPrimaryMediaType(item: GalleryItem) {
 }
 
 export function filterGalleryItems(items: GalleryItem[], search: string, category: 'all' | 'video' | 'image') {
-  const normalizedSearch = search.toLowerCase();
+  const normalizedSearch = search.trim().toLowerCase();
 
   return items.filter((item) => {
-    const matchesSearch = item.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch))
-      || item.description.toLowerCase().includes(normalizedSearch);
+    const searchableText = [
+      item.title,
+      item.description,
+      item.model,
+      item.content,
+      ...item.tags,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
     const primaryMediaType = getPrimaryMediaType(item);
     const matchesCategory = category === 'all' || primaryMediaType === category;
 

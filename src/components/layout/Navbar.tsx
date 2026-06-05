@@ -28,12 +28,19 @@ function IconSearch() {
   );
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  search?: string;
+  onSearchChange?: (value: string) => void;
+}
+
+export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
   const [mounted, setMounted] = useState(false);
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState('');
   const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchValue = search ?? localSearch;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -71,6 +78,14 @@ export default function Navbar() {
     setIsThemeOpen(false);
   };
 
+  const handleSearchChange = (value: string) => {
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else {
+      setLocalSearch(value);
+    }
+  };
+
   return (
     <>
       <nav className="topnav fixed top-0 right-0 left-0 z-[100]">
@@ -102,10 +117,11 @@ export default function Navbar() {
             <IconSearch />
             <input
               aria-label="搜索灵感"
-              placeholder="Search prompts, styles, creators..."
+              value={searchValue}
+              placeholder="搜索标题、模型、标签或提示词..."
               spellCheck={false}
+              onChange={(event) => handleSearchChange(event.target.value)}
             />
-            <kbd className="hidden md:inline">⌘K</kbd>
           </div>
 
           <div className="nav-right">

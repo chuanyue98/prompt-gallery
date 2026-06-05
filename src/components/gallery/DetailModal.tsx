@@ -178,7 +178,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 <div className="aname">{item.model ?? 'Prompt Archive'}</div>
                 <div className="acat">{isVideo ? 'Video' : 'Image'} / {item.tags[0] ?? 'Reference'}</div>
               </div>
-              <button className="follow-btn" type="button">Source</button>
+              {item.sourceUrl ? (
+                <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="follow-btn">Source</a>
+              ) : null}
             </div>
 
             <div className="prompt-block">
@@ -215,12 +217,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 <IconCopy /> {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
               </button>
             </div>
-
-            {item.sourceUrl ? (
-              <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="copy-inline">
-                VIEW SOURCE
-              </a>
-            ) : null}
 
             <div className="mt-auto pt-2">
               {deleteSuccess ? (

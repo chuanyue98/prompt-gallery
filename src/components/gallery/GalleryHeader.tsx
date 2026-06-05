@@ -39,9 +39,9 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   return (
     <div className="catstrip">
       <div className="cats" data-testid="gallery-category-switcher">
-        <button className="cat trending on" type="button">
+        <span className="cat trending on" aria-label="Trending collection">
           <FlameIcon /> Trending
-        </button>
+        </span>
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}

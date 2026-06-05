@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 
@@ -64,6 +65,28 @@ describe('Navbar component', () => {
     expect(mockScroll).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     
     vi.unstubAllGlobals();
+  });
+
+  it('emits top search changes when controlled', async () => {
+    const user = userEvent.setup();
+    const onSearchChange = vi.fn();
+    function ControlledNavbar() {
+      const [search, setSearch] = useState('');
+      return (
+        <Navbar
+          search={search}
+          onSearchChange={(value) => {
+            onSearchChange(value);
+            setSearch(value);
+          }}
+        />
+      );
+    }
+
+    render(<ControlledNavbar />);
+
+    await user.type(screen.getByPlaceholderText('搜索标题、模型、标签或提示词...'), 'cat');
+    expect(onSearchChange).toHaveBeenLastCalledWith('cat');
   });
 
   it('opens and closes contribute modal when button is clicked', async () => {

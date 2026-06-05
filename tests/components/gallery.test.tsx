@@ -76,6 +76,8 @@ describe('Gallery component helpers', () => {
     expect(filterGalleryItems(galleryItems, '', 'invalid' as unknown as 'all')).toHaveLength(0);
     // description-match branch: 'lighting' is not in any tag but is in image-item description
     expect(filterGalleryItems(galleryItems, 'lighting', 'all')).toHaveLength(1);
+    expect(filterGalleryItems(galleryItems, 'sora', 'all')).toHaveLength(1);
+    expect(filterGalleryItems(galleryItems, 'Fast car', 'all')).toHaveLength(1);
   });
 
 
@@ -153,6 +155,19 @@ describe('Gallery component', () => {
     expect(video).toHaveAttribute('src', '/media/video-item/clip.mp4');
     expect(video).toHaveProperty('muted', true);
     expect(video).toHaveProperty('loop', true);
+  });
+
+  it('filters gallery from the top navigation search', async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('搜索标题、模型、标签或提示词...'), 'gpt-image-1');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '打开作品详情: video-item' })).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: '打开作品详情: image-item' })).toBeInTheDocument();
   });
 
   it('renders image hero for image items', async () => {
@@ -482,9 +497,9 @@ describe('DetailModal direct tests', () => {
     expect(screen.getByText('COPIED ✓')).toBeInTheDocument();
   });
 
-  it('shows VIEW SOURCE link when sourceUrl is present', () => {
+  it('shows Source link when sourceUrl is present', () => {
     render(<DetailModal item={galleryItems[1]} {...baseProps} />);
-    expect(screen.getByRole('link', { name: 'VIEW SOURCE' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Source' })).toHaveAttribute('href', 'https://example.com/source');
   });
 
   it('shows delete form and cancel button works', async () => {
