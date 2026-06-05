@@ -103,7 +103,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
 
         <div>
           <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Source URL (可选)</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={formData.sourceUrl}
               onChange={e => setFormData({ ...formData, sourceUrl: e.target.value })}
@@ -114,7 +114,7 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
               type="button"
               disabled={isParsing || !formData.sourceUrl.trim()}
               onClick={() => onParseLink(formData.sourceUrl)}
-              className={`theme-secondary-button rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${isParsing ? 'opacity-50' : ''}`}
+              className={`theme-secondary-button shrink-0 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${isParsing ? 'opacity-50' : ''}`}
             >
               {isParsing ? '解析中...' : '自动解析'}
             </button>

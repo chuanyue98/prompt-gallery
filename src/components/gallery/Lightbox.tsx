@@ -86,6 +86,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
         )}
       </div>
       <button 
+        aria-label="关闭预览"
         onClick={onClose}
         className="absolute top-6 right-6 text-white text-3xl opacity-50 hover:opacity-100 z-[210]"
       >
