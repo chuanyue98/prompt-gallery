@@ -385,9 +385,14 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
 
       let finalFileName = downloaded.fileName;
       if (committedFiles.some(f => f.fileName === finalFileName)) {
-        const parts = finalFileName.split('.');
-        const ext = parts.pop();
-        finalFileName = `${parts.join('.')}-${urlIdx++}.${ext}`;
+        const lastDotIndex = finalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+          const base = finalFileName.slice(0, lastDotIndex);
+          const ext = finalFileName.slice(lastDotIndex + 1);
+          finalFileName = `${base}-${urlIdx++}.${ext}`;
+        } else {
+          finalFileName = `${finalFileName}-${urlIdx++}`;
+        }
       }
 
       committedFiles.push({ fileName: finalFileName, fileBase64: downloaded.fileBase64 });

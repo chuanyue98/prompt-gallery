@@ -5,11 +5,13 @@ export function useMediaNavigation(total: number, initial = 0) {
 
   const next = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    if (total <= 0) return;
     setIndex((prev) => (prev + 1) % total);
   }, [total]);
 
   const prev = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    if (total <= 0) return;
     setIndex((prev) => (prev - 1 + total) % total);
   }, [total]);
 
