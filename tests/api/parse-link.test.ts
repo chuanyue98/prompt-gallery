@@ -91,4 +91,112 @@ describe('POST /api/parse-link', () => {
     expect(data.success).toBe(false);
     expect(data.error).toBe('Failed to parse link');
   });
+
+  it.each([
+    ['localhost', 'http://localhost/'],
+    ['127.0.0.1', 'http://127.0.0.1/'],
+    ['::1', 'http://[::1]/'],
+    ['169.254.169.254', 'http://169.254.169.254/'],
+  ])('should block SSRF host %s', async (_label, url) => {
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBe('Domain not allowed');
+  });
+
+  it('should handle responses without a body stream', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="No Body Title" />
+          <meta property="og:description" content="No body desc" />
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: null,
+      text: () => Promise.resolve(mockHtml),
+    } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/valid-but-missing' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+    expect(data.metadata.title).toBe('No Body Title');
+  });
+
+  it('should read from response body stream when present', async () => {
+    const htmlContent = '<html><head><meta property="og:title" content="Stream Title" /></head></html>';
+    const encoder = new TextEncoder();
+    const chunks = [encoder.encode(htmlContent)];
+
+    const stream = new ReadableStream({
+      start(controller) {
+        for (const chunk of chunks) {
+          controller.enqueue(chunk);
+        }
+        controller.close();
+      },
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+    } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/valid-but-missing' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+    expect(data.metadata.title).toBe('Stream Title');
+  });
+
+  it('should reject responses larger than 2MB', async () => {
+    const largeContent = 'x'.repeat(2 * 1024 * 1024 + 1);
+    const encoder = new TextEncoder();
+    const chunks = [encoder.encode(largeContent)];
+
+    const stream = new ReadableStream({
+      start(controller) {
+        for (const chunk of chunks) {
+          controller.enqueue(chunk);
+        }
+        controller.close();
+      },
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+    } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/valid-but-missing' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+  });
 });
