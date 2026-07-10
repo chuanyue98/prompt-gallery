@@ -1,6 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/parse-link/route';
+import { lookup } from 'node:dns/promises';
+
+const mockLookup = vi.hoisted(() => vi.fn());
+
+vi.mock('node:dns/promises', () => ({
+  default: { lookup: mockLookup },
+  lookup: mockLookup,
+}));
+
+mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
 
 describe('POST /api/parse-link', () => {
   it('should return 400 if URL is missing', async () => {
@@ -134,6 +144,20 @@ describe('POST /api/parse-link', () => {
     expect(data.error).toBe('Domain not allowed');
   });
 
+  it('should block allowed domain that resolves to private IP', async () => {
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: '10.0.0.2', family: 4 }]);
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://fxtwitter.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBe('Domain not allowed');
+  });
+
   it('should handle responses without a body stream', async () => {
     const mockHtml = `
       <html>
@@ -216,6 +240,128 @@ describe('POST /api/parse-link', () => {
     const req = new NextRequest('http://localhost/api/parse-link', {
       method: 'POST',
       body: JSON.stringify({ url: 'https://x.com/valid-but-missing' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+  });
+
+  it('should follow safe redirects and parse final page', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="Redirected Title" />
+          <meta property="og:description" content="Redirected desc" />
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({ location: 'https://x.com/final-status' }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(mockHtml),
+      } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+    expect(data.metadata.title).toBe('Redirected Title');
+  });
+
+  it('should return 400 when redirect response has no location header', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      status: 302,
+      headers: new Headers(),
+    } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('Redirect missing location');
+  });
+
+  it('should handle redirect response with null body stream', async () => {
+    const mockHtml = '<html><head><meta property="og:title" content="No Stream Title" /></head></html>';
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({ location: 'https://x.com/final-status' }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        body: null,
+        text: () => Promise.resolve(mockHtml),
+      } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+    expect(data.metadata.title).toBe('No Stream Title');
+  });
+
+  it('should reject oversized redirect response', async () => {
+    const largeContent = 'x'.repeat(2 * 1024 * 1024 + 1);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({ location: 'https://x.com/final-status' }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve(largeContent),
+      } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+  });
+
+  it('should handle redirect response when second fetch is not ok', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({ location: 'https://x.com/final-status' }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Not Found',
+      } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
     });
 
     const res = await POST(req);
