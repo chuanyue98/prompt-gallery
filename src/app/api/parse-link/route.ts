@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithTimeout } from '@/lib/utils';
+import { validateMediaDownloadUrl } from '@/lib/ssrf';
 
 const ALLOWED_DOMAINS = ['x.com', 'twitter.com', 'fxtwitter.com', 'pbs.twimg.com'];
 const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254'];
@@ -34,6 +35,11 @@ export async function POST(req: NextRequest) {
     if (parsedUrl.hostname.includes('x.com') || parsedUrl.hostname.includes('twitter.com')) {
       targetUrl = url.replace(/https?:\/\/(www\.)?(x|twitter)\.com/, 'https://fxtwitter.com');
       isX = true;
+    }
+
+    const validationError = await validateMediaDownloadUrl(targetUrl);
+    if (validationError) {
+      return NextResponse.json({ success: false, error: 'Domain not allowed' }, { status: 403 });
     }
 
     const response = await fetchWithTimeout(targetUrl, {

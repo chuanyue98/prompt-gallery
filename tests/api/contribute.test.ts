@@ -36,8 +36,9 @@ import {
   POST,
   buildContributionSlug,
   isHttpOrHttpsUrl,
-  validateMediaDownloadUrl,
 } from '@/app/api/contribute/route';
+
+import { validateMediaDownloadUrl } from '@/lib/ssrf';
 
 import {
   getOctokit,

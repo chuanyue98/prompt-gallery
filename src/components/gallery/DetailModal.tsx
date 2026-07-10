@@ -65,7 +65,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           <IconX size={18} />
         </button>
 
-        <div className={`modal-media group relative cursor-zoom-in ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
+        <div className={`modal-media group relative cursor-zoom-in max-sm:max-h-[35vh] ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
           {mediaUrl ? (
             isVideo ? (
               <video
