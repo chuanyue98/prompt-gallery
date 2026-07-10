@@ -375,25 +375,24 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     committedFiles.push({ fileName: file.name, fileBase64 });
     mediaItems.push({ type, src: file.name, cover: file.name });
   }
-// Handle media URLs (download and persist)
-let urlIdx = 0;
-for (const url of mediaUrls) {
-  try {
-    const downloaded = await downloadMedia(url);
-    const type = downloaded.mediaType || inferMediaTypeFromUrl(url) || 'image';
 
-    // Ensure unique filename for downloads
-    let finalFileName = downloaded.fileName;
-    if (committedFiles.some(f => f.fileName === finalFileName)) {
-      const parts = finalFileName.split('.');
-      const ext = parts.pop();
-      finalFileName = `${parts.join('.')}-${urlIdx++}.${ext}`;
-    }
+  // Handle media URLs (download and persist)
+  let urlIdx = 0;
+  for (const url of mediaUrls) {
+    try {
+      const downloaded = await downloadMedia(url);
+      const type = downloaded.mediaType || inferMediaTypeFromUrl(url) || 'image';
 
-    committedFiles.push({ fileName: finalFileName, fileBase64: downloaded.fileBase64 });
-    mediaItems.push({ type, src: finalFileName, cover: finalFileName });
-  } catch (error: unknown) {
+      let finalFileName = downloaded.fileName;
+      if (committedFiles.some(f => f.fileName === finalFileName)) {
+        const parts = finalFileName.split('.');
+        const ext = parts.pop();
+        finalFileName = `${parts.join('.')}-${urlIdx++}.${ext}`;
+      }
 
+      committedFiles.push({ fileName: finalFileName, fileBase64: downloaded.fileBase64 });
+      mediaItems.push({ type, src: finalFileName, cover: finalFileName });
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Media download failed';
       return NextResponse.json({ error: `无法下载媒体文件: ${message}` }, { status: 500 });
     }

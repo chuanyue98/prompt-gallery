@@ -18,3 +18,22 @@ export const slugify = (text: string): string => {
     .replace(/[^a-z0-9]/g, '-')
     .slice(0, 30) + '-' + randomHex5();
 };
+
+export async function fetchWithTimeout(
+  input: URL | RequestInfo,
+  init?: RequestInit & { timeoutMs?: number }
+): Promise<Response> {
+  const timeoutMs = init?.timeoutMs ?? 10_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}

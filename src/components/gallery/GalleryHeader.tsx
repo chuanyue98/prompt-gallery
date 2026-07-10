@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { IconFlame } from '@/components/icons';
 
 interface GalleryHeaderProps {
   search: string;
@@ -17,15 +18,6 @@ const CATEGORIES = [
   { id: 'image', label: '图片' },
 ] as const;
 
-function FlameIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3c2 4-2 5-2 9a4 4 0 0 0 8 0c0-2-1-3-2-4 0 2-1 3-2 3 1-3-1-6-2-8z" />
-      <path d="M10 14a2 2 0 1 0 4 0" />
-    </svg>
-  );
-}
-
 export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   search,
   onSearchChange,
@@ -40,7 +32,7 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
     <div className="catstrip">
       <div className="cats" data-testid="gallery-category-switcher">
         <span className="cat trending on" aria-label="Trending collection">
-          <FlameIcon /> Trending
+          <IconFlame size={13} /> Trending
         </span>
         {CATEGORIES.map((cat) => (
           <button

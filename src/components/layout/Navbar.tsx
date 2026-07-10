@@ -10,23 +10,7 @@ import {
   THEME_OPTIONS,
   type ThemeId,
 } from '@/lib/theme';
-
-function IconChevronDown() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
-
-function IconSearch() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
+import { IconChevronDown, IconSearch } from '@/components/icons';
 
 interface NavbarProps {
   search?: string;
@@ -138,7 +122,7 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
               >
                 <span className="hidden sm:block">THEME</span>
                 <span>{THEME_OPTIONS.find((option) => option.id === theme)?.label}</span>
-                <IconChevronDown />
+                <IconChevronDown size={16} />
               </button>
 
               {isThemeOpen ? (

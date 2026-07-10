@@ -3,6 +3,8 @@
 import React from 'react';
 import type { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
+import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
+import { IconCopy, IconX, IconHeart, IconBookmark, IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface DetailModalProps {
   item: GalleryItem;
@@ -19,39 +21,6 @@ interface DetailModalProps {
   deleteSuccess: boolean;
 }
 
-function IconCopy() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="8" y="8" width="12" height="12" rx="2" />
-      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-    </svg>
-  );
-}
-
-function IconX() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 6 18 18 M18 6 6 18" />
-    </svg>
-  );
-}
-
-function IconHeart() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" />
-    </svg>
-  );
-}
-
-function IconBookmark() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 4h12v17l-6-4-6 4z" />
-    </svg>
-  );
-}
-
 export const DetailModal: React.FC<DetailModalProps> = ({
   item,
   onClose,
@@ -66,7 +35,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   isDeleting,
   deleteSuccess,
 }) => {
-  const [currentMediaIndex, setCurrentMediaIndex] = React.useState(0);
+  const { index: currentMediaIndex, next: nextMedia, prev: prevMedia } = useMediaNavigation(item.media.length);
   const currentMedia = item.media[currentMediaIndex] || item.media[0];
   const mediaUrl = getGalleryMediaUrl(item, 'src', currentMediaIndex);
   const coverUrl = getGalleryMediaUrl(item, 'cover', currentMediaIndex);
@@ -89,21 +58,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const hasMultipleMedia = item.media.length > 1;
 
-  const nextMedia = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentMediaIndex((prev) => (prev + 1) % item.media.length);
-  };
-
-  const prevMedia = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentMediaIndex((prev) => (prev - 1 + item.media.length) % item.media.length);
-  };
-
   return (
     <div className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button aria-label="关闭详情弹层" className="modal-close" onClick={onClose}>
-          <IconX />
+          <IconX size={18} />
         </button>
 
         <div className={`modal-media group relative cursor-zoom-in ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
@@ -140,9 +99,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 aria-label="Previous media"
                 className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
+                <IconArrowLeft size={20} />
               </button>
               <button
                 type="button"
@@ -150,9 +107,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 aria-label="Next media"
                 className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <IconArrowRight size={20} />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] font-black text-white backdrop-blur-md">
                 {currentMediaIndex + 1} / {item.media.length}
@@ -181,8 +136,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <div className="modal-head">
               {item.model ? <div className="model-tag">{item.model}</div> : <span />}
               <div className="modal-stats">
-                <span><IconHeart /> {likes.toLocaleString()}</span>
-                <span><IconBookmark /> {saves.toLocaleString()}</span>
+                <span><IconHeart size={12} /> {likes.toLocaleString()}</span>
+                <span><IconBookmark size={12} /> {saves.toLocaleString()}</span>
               </div>
             </div>
 
@@ -202,8 +157,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <div className="prompt-block">
               <div className="block-label">
                 <span>Prompt</span>
-                <span className="copy-inline">
-                  <IconCopy /> Prompt Copy
+                 <span className="copy-inline">
+                  <IconCopy size={14} /> Prompt Copy
                 </span>
               </div>
               <p className="prompt-text">{cleanedPrompt}</p>
@@ -230,7 +185,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 className={`cta primary ${isCopied ? 'theme-success-surface' : ''}`}
                 onClick={() => onCopy(item.content, 'modal')}
               >
-                <IconCopy /> {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
+                  <IconCopy size={14} /> {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
               </button>
             </div>
 

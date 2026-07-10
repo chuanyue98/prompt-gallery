@@ -3,6 +3,8 @@
 import React from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
+import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
+import { IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface LightboxProps {
   item: GalleryItem;
@@ -10,23 +12,13 @@ interface LightboxProps {
 }
 
 export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const { index: currentIndex, next: nextMedia, prev: prevMedia } = useMediaNavigation(item.media.length);
   const currentMedia = item.media[currentIndex] || item.media[0];
   const mediaUrl = getGalleryMediaUrl(item, 'src', currentIndex);
   const coverUrl = getGalleryMediaUrl(item, 'cover', currentIndex);
   const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
 
   const hasMultipleMedia = item.media.length > 1;
-
-  const nextMedia = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % item.media.length);
-  };
-
-  const prevMedia = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentIndex((prev) => (prev - 1 + item.media.length) % item.media.length);
-  };
 
   return (
     <div 
@@ -65,9 +57,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
               aria-label="Previous media"
               className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-4 text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <IconArrowLeft size={24} />
             </button>
             <button
               type="button"
@@ -75,9 +65,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
               aria-label="Next media"
               className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-4 text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <IconArrowRight size={24} />
             </button>
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-black text-white backdrop-blur-md">
               {currentIndex + 1} / {item.media.length}

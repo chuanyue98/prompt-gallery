@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import { IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface ContributePreviewProps {
   preview: string | null;
@@ -109,9 +110,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
                 aria-label="Previous media"
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
+                <IconArrowLeft size={16} />
               </button>
               <button
                 type="button"
@@ -119,9 +118,7 @@ export const ContributePreview: React.FC<ContributePreviewProps> = ({
                 aria-label="Next media"
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+                <IconArrowRight size={16} />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] font-black text-white backdrop-blur-md">
                 {currentMediaIndex + 1} / {mediaUrls.length}
