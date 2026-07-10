@@ -46,7 +46,32 @@ export async function POST(req: NextRequest) {
       throw new Error(`Fetch failed: ${response.statusText}`);
     }
 
-    const html = await response.text();
+    const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+    let totalSize = 0;
+    const chunks: Uint8Array[] = [];
+
+    if (response.body) {
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        totalSize += value.length;
+        if (totalSize > MAX_RESPONSE_SIZE) {
+          throw new Error('Response too large');
+        }
+        chunks.push(value);
+      }
+    } else {
+      const text = await response.text();
+      if (text.length > MAX_RESPONSE_SIZE) {
+        throw new Error('Response too large');
+      }
+      chunks.push(new Uint8Array(Buffer.from(text, 'utf-8')));
+    }
+
+    const html = Buffer.concat(chunks).toString('utf-8');
 
     const metadata = {
       title: getMetaContent(html, 'og:title'),
