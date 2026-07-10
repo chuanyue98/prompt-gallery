@@ -45,79 +45,133 @@ export async function POST(req: NextRequest) {
     const response = await fetchWithTimeout(targetUrl, {
       headers: {
         'User-Agent': 'TelegramBot (like TwitterBot)'
-      }
+      },
+      redirect: 'manual',
     });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get('location');
+      if (!location) {
+        return NextResponse.json({ success: false, error: 'Redirect missing location' }, { status: 400 });
+      }
+      const nextUrl = new URL(location, targetUrl).toString();
+      const redirectValidation = await validateMediaDownloadUrl(nextUrl);
+      if (redirectValidation) {
+        return NextResponse.json({ success: false, error: 'Domain not allowed' }, { status: 403 });
+      }
+      targetUrl = nextUrl;
+      const secondResponse = await fetchWithTimeout(targetUrl, {
+        headers: {
+          'User-Agent': 'TelegramBot (like TwitterBot)'
+        }
+      });
+      if (!secondResponse.ok) {
+        throw new Error(`Fetch failed: ${secondResponse.statusText}`);
+      }
+      
+      const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+      let totalSize = 0;
+      const chunks: Uint8Array[] = [];
+
+      if (secondResponse.body) {
+        const reader = secondResponse.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          totalSize += value.length;
+          if (totalSize > MAX_RESPONSE_SIZE) {
+            throw new Error('Response too large');
+          }
+          chunks.push(value);
+        }
+      } else {
+        const text = await secondResponse.text();
+        if (text.length > MAX_RESPONSE_SIZE) {
+          throw new Error('Response too large');
+        }
+        chunks.push(new Uint8Array(Buffer.from(text, 'utf-8')));
+      }
+
+      const html = Buffer.concat(chunks).toString('utf-8');
+      return buildMetadataResponse(html, isX);
+    }
 
     if (!response.ok) {
       throw new Error(`Fetch failed: ${response.statusText}`);
     }
 
-    const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
-    let totalSize = 0;
-    const chunks: Uint8Array[] = [];
-
-    if (response.body) {
-      const reader = response.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        totalSize += value.length;
-        if (totalSize > MAX_RESPONSE_SIZE) {
-          throw new Error('Response too large');
-        }
-        chunks.push(value);
-      }
-    } else {
-      const text = await response.text();
-      if (text.length > MAX_RESPONSE_SIZE) {
-        throw new Error('Response too large');
-      }
-      chunks.push(new Uint8Array(Buffer.from(text, 'utf-8')));
-    }
-
-    const html = Buffer.concat(chunks).toString('utf-8');
-
-    const metadata = {
-      title: getMetaContent(html, 'og:title'),
-      description: getMetaContent(html, 'og:description'),
-      image: getMetaContent(html, 'og:image'),
-      video: getMetaContent(html, 'og:video'),
-      images: [] as string[],
-      prompt: ''
-    };
-
-    // Extract all media URLs (pbs.twimg.com or pbs.fxtwitter.com)
-    const mediaMatches = html.match(/https:\/\/pbs\.(twimg|fxtwitter)\.com\/media\/[^"'\s?]+/g);
-    if (mediaMatches) {
-      metadata.images = [...new Set(mediaMatches)].map(url => `${url}?name=orig`);
-    }
-
-    // If og:image is a mosaic, prefer the first individual image
-    if (metadata.image.includes('mosaic.fxtwitter.com') && metadata.images.length > 0) {
-      metadata.image = metadata.images[0];
-    }
-
-    if (isX) {
-      // For X, the description often contains the prompt. 
-      const promptMatch = metadata.description.match(/(提示词|Prompt|咒语)[:：\s]+([\s\S]+)/i);
-      if (promptMatch) {
-        metadata.prompt = promptMatch[2].trim();
-      } else {
-        metadata.prompt = metadata.description;
-      }
-      
-      if (metadata.title.includes('(@')) {
-        metadata.title = metadata.title.split('(@')[0].trim();
-      }
-    }
-
-    return NextResponse.json({ success: true, metadata });
+    const html = await readResponseBody(response);
+    return buildMetadataResponse(html, isX);
   } catch (error: unknown) {
     console.error('Parse Link Error:', error);
     return NextResponse.json({ success: false, error: 'Failed to parse link' }, { status: 500 });
   }
+}
+
+async function readResponseBody(response: Response): Promise<string> {
+  const MAX_RESPONSE_SIZE = 2 * 1024 * 1024;
+  let totalSize = 0;
+  const chunks: Uint8Array[] = [];
+
+  if (response.body) {
+    const reader = response.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      totalSize += value.length;
+      if (totalSize > MAX_RESPONSE_SIZE) {
+        throw new Error('Response too large');
+      }
+      chunks.push(value);
+    }
+  } else {
+    const text = await response.text();
+    if (text.length > MAX_RESPONSE_SIZE) {
+      throw new Error('Response too large');
+    }
+    chunks.push(new Uint8Array(Buffer.from(text, 'utf-8')));
+  }
+
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
+function buildMetadataResponse(html: string, isX = false) {
+  const metadata = {
+    title: getMetaContent(html, 'og:title'),
+    description: getMetaContent(html, 'og:description'),
+    image: getMetaContent(html, 'og:image'),
+    video: getMetaContent(html, 'og:video'),
+    images: [] as string[],
+    prompt: ''
+  };
+
+  const mediaMatches = html.match(/https:\/\/pbs\.(twimg|fxtwitter)\.com\/media\/[^"'\s?]+/g);
+  if (mediaMatches) {
+    metadata.images = [...new Set(mediaMatches)].map(url => `${url}?name=orig`);
+  }
+
+  if (metadata.image.includes('mosaic.fxtwitter.com') && metadata.images.length > 0) {
+    metadata.image = metadata.images[0];
+  }
+
+  if (isX) {
+    const promptMatch = metadata.description.match(/(提示词|Prompt|咒语)[:：\s]+([\s\S]+)/i);
+    if (promptMatch) {
+      metadata.prompt = promptMatch[2].trim();
+    } else {
+      metadata.prompt = metadata.description;
+    }
+    
+    if (metadata.title.includes('(@')) {
+      metadata.title = metadata.title.split('(@')[0].trim();
+    }
+  }
+
+  return NextResponse.json({ success: true, metadata });
 }
 
 function getMetaContent(html: string, property: string): string {

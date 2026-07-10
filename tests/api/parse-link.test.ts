@@ -110,6 +110,30 @@ describe('POST /api/parse-link', () => {
     expect(data.error).toBe('Domain not allowed');
   });
 
+  it('should block SSRF via redirect to private host', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        status: 302,
+        headers: new Headers({ location: 'http://127.0.0.1/evil' }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        body: null,
+        text: () => Promise.resolve('<html></html>'),
+      } as unknown as Response);
+
+    const req = new NextRequest('http://localhost/api/parse-link', {
+      method: 'POST',
+      body: JSON.stringify({ url: 'https://x.com/status/123' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBe('Domain not allowed');
+  });
+
   it('should handle responses without a body stream', async () => {
     const mockHtml = `
       <html>
