@@ -81,8 +81,8 @@
 
 - [x] T009 [US2] 修改 `src/components/gallery/Gallery.tsx` 中的 `selectedItem` 弹窗容器类：移动端 `rounded-none` 或 `rounded-t-3xl`，全屏宽度
 - [x] T010 [US2] 重构详情页内容布局：将 `md:flex-row` 改为默认 `flex-col`，确保媒体区与内容区在移动端垂直分布
-- [ ] T011 [US2] 在 `src/components/gallery/Gallery.tsx` 中为移动端详情页图片添加 `max-h-[35vh]` 限制
-- [ ] T012 [US2] 在 `src/components/gallery/Gallery.tsx` 中实现 Lightbox 全屏预览逻辑及样式
+- [x] T011 [US2] 在 `src/components/gallery/DetailModal.tsx` 中为移动端详情页媒体区添加 `max-sm:max-h-[35vh]` 限制
+- [x] T012 [US2] 在 `src/components/gallery/Gallery.tsx` 中实现 Lightbox 全屏预览逻辑及样式（Lightbox.tsx 已存在并完整实现）
 - [x] T013 [P] [US2] 优化详情页操作按钮点击区域：在 `src/components/gallery/Gallery.tsx` 中为移动端按钮增加 `min-h-[44px]` 逻辑
 - [x] T014 [US2] 验证并补齐详情页移动端滚动锁定逻辑测试 `tests/components/gallery.test.tsx`
 

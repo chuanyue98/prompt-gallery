@@ -65,7 +65,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           <IconX size={18} />
         </button>
 
-        <div className={`modal-media group relative cursor-zoom-in ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
+        <div className={`modal-media group relative cursor-zoom-in max-sm:max-h-[35vh] ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
           {mediaUrl ? (
             isVideo ? (
               <video
@@ -82,8 +82,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={mediaUrl} src={mediaUrl} alt={item.description || item.title || item.slug} />
+               // eslint-disable-next-line @next/next/no-img-element
+               <img key={mediaUrl} src={mediaUrl} alt={item.description || item.title || item.slug} className="max-w-full max-h-full object-contain" />
             )
           ) : (
             <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
