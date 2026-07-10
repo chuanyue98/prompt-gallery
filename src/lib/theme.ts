@@ -45,7 +45,11 @@ export function resolveTheme(value: string | null | undefined): ThemeId {
 }
 
 export function applyThemeToDocument(theme: ThemeId, root?: HTMLElement | null) {
-  const target = root ?? document.documentElement;
+  const target = root ?? (typeof document !== 'undefined' ? document.documentElement : null);
+  if (!target) {
+    return theme;
+  }
+
   target.dataset.theme = theme;
   target.style.colorScheme = (theme === 'soft-ui' || theme === 'cream-warm') ? 'light' : 'dark';
 

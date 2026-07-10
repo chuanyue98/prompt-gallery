@@ -28,8 +28,11 @@ export async function fetchWithTimeout(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const { signal, timeoutMs, ...restInit } = init ?? {};
+    void signal;
+    void timeoutMs;
     const response = await fetch(input, {
-      ...init,
+      ...restInit,
       signal: controller.signal,
     });
     return response;
