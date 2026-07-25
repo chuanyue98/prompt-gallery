@@ -19,7 +19,7 @@ describe("useVideoPreview", () => {
   });
 
   it("plays/pauses via observer callback", () => {
-    let cb: any = () => {};
+    let cb: (entries: Array<{ isIntersecting: boolean; intersectionRatio: number }>) => void = () => {};
     const Orig = globalThis.IntersectionObserver;
     class MockIO {
       readonly root = null;
@@ -29,9 +29,9 @@ describe("useVideoPreview", () => {
       unobserve = vi.fn();
       disconnect = vi.fn();
       takeRecords = vi.fn();
-      constructor(fn: any) { cb = fn; }
+      constructor(fn: typeof cb) { cb = fn; }
     }
-    globalThis.IntersectionObserver = MockIO as any;
+    globalThis.IntersectionObserver = MockIO as unknown as typeof IntersectionObserver;
     const playSpy = vi.fn().mockResolvedValue(undefined);
     const pauseSpy = vi.fn();
     const { container } = render(<VideoTest enabled={true} />);

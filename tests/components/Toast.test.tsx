@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { showToast, dismissToast, ToastContainer } from '@/components/ui/Toast';
+import { showToast, ToastContainer } from '@/components/ui/Toast';
 
 describe('Toast', () => {
   beforeEach(() => {
@@ -63,18 +63,12 @@ describe('Toast', () => {
 
   it('dismissToast removes by id', () => {
     render(<ToastContainer />);
-    let keepId = -1;
-    let removeId = -1;
-    // Use unique messages and infer ids from order
     act(() => {
       showToast('KeepItem', 'success');
     });
     act(() => {
       showToast('RemoveItem', 'error');
     });
-    // The first toast gets id = nextId (before increment), second gets nextId+1
-    // Since nextId is module-level, we try dismissing the second toast by trying ids
-    // Instead, dismiss by clicking the remove item
     const removeToast = screen.getByText('RemoveItem');
     fireEvent.click(removeToast);
     expect(screen.getByText('KeepItem')).toBeInTheDocument();
