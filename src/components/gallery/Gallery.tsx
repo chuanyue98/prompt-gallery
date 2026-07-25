@@ -93,6 +93,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
@@ -170,6 +171,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
     }
 
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       const response = await fetch('/api/contribute?action=delete', {
         method: 'POST',
@@ -188,6 +190,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
 
       setDeleteSuccess(true);
       setDeleteReason('');
+      setDeleteError(null);
       setTimeout(() => {
         setSelectedItem(null);
         setDeleteSuccess(false);
@@ -195,7 +198,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
       }, 3000);
     } catch (error) {
       console.error('Delete Request Error:', error);
-      alert(error instanceof Error ? error.message : '提交失败，请稍后重试');
+      setDeleteError(error instanceof Error ? error.message : '提交失败，请稍后重试');
     } finally {
       setIsDeleting(false);
     }
@@ -211,7 +214,8 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
     }
   };
   const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
-  const heroItem = filteredItems.length > 0 ? filteredItems[0] : null;
+  const hasActiveFilter = search.trim() !== '' || category !== 'all';
+  const heroItem = !hasActiveFilter && filteredItems.length > 0 ? filteredItems[0] : null;
 
   return (
     <div className="main">
@@ -243,6 +247,16 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
         </div>
       ) : null}
 
+      {isLoading ? (
+        <div className="masonry" aria-busy="true" aria-live="polite">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card skeleton-card" aria-hidden="true">
+              <div className="card-media skeleton-shimmer" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {!loadError && filteredItems.length > 0 ? (
         <div className="masonry">
           {filteredItems.map((item) => (
@@ -268,6 +282,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
           onCopy={handleCopy}
           copiedSlug={copiedSlug}
           onLightboxOpen={() => setIsLightboxOpen(true)}
+          deleteError={deleteError}
           showDeleteForm={showDeleteForm}
           setShowDeleteForm={setShowDeleteForm}
           deleteReason={deleteReason}

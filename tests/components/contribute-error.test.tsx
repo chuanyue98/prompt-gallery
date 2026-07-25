@@ -388,6 +388,7 @@ describe('DetailModal multi-media navigation', () => {
         onCopy={vi.fn()}
         copiedSlug={null}
         onLightboxOpen={vi.fn()}
+        deleteError={null}
         showDeleteForm={false}
         setShowDeleteForm={vi.fn()}
         deleteReason=""

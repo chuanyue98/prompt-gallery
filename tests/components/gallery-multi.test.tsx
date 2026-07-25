@@ -26,6 +26,7 @@ describe('Multi-media Navigation', () => {
     onCopy: vi.fn(),
     copiedSlug: null as string | null,
     onLightboxOpen: vi.fn(),
+    deleteError: null,
     showDeleteForm: false,
     setShowDeleteForm: vi.fn(),
     deleteReason: '',

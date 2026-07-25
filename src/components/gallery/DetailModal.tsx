@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
-import { IconCopy, IconX, IconHeart, IconBookmark, IconArrowLeft, IconArrowRight } from '@/components/icons';
+import { IconCopy, IconX, IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface DetailModalProps {
   item: GalleryItem;
@@ -12,6 +12,7 @@ interface DetailModalProps {
   onCopy: (text: string, slug: string) => void;
   copiedSlug: string | null;
   onLightboxOpen: () => void;
+  deleteError: string | null;
   showDeleteForm: boolean;
   setShowDeleteForm: (show: boolean) => void;
   deleteReason: string;
@@ -27,6 +28,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   onCopy,
   copiedSlug,
   onLightboxOpen,
+  deleteError,
   showDeleteForm,
   setShowDeleteForm,
   deleteReason,
@@ -46,8 +48,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
   const isCopied = copiedSlug === 'modal';
   const cleanedPrompt = item.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim();
-  const likes = cleanedPrompt.length * 17;
-  const saves = Math.max(tags.length * 41, 12);
   const promptWordCount = cleanedPrompt.split(/\s+/).filter(Boolean).length;
   const promptParams = [
     ['Media', isVideo ? 'Video' : 'Image'],
@@ -58,10 +58,38 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const hasMultipleMedia = item.media.length > 1;
 
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'ArrowRight' && hasMultipleMedia) {
+        e.preventDefault();
+        nextMedia();
+      } else if (e.key === 'ArrowLeft' && hasMultipleMedia) {
+        e.preventDefault();
+        prevMedia();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, nextMedia, prevMedia, hasMultipleMedia]);
+
   return (
     <div className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <button aria-label="关闭详情弹层" className="modal-close" onClick={onClose}>
+        <button ref={closeBtnRef} aria-label="关闭详情弹层" className="modal-close" onClick={onClose}>
           <IconX size={18} />
         </button>
 
@@ -135,10 +163,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           <div className="modal-side-scroll">
             <div className="modal-head">
               {item.model ? <div className="model-tag">{item.model}</div> : <span />}
-              <div className="modal-stats">
-                <span><IconHeart size={12} /> {likes.toLocaleString()}</span>
-                <span><IconBookmark size={12} /> {saves.toLocaleString()}</span>
-              </div>
             </div>
 
             <h2 className="modal-title">{item.title || item.slug}</h2>
@@ -204,6 +228,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 </button>
               ) : (
                 <div className="flex flex-col gap-2">
+                  {deleteError ? (
+                    <div role="alert" className="theme-danger-button rounded-[12px] px-4 py-2.5 text-xs">
+                      {deleteError}
+                    </div>
+                  ) : null}
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
                     申请下架原因
                   </label>

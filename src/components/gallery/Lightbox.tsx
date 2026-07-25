@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
@@ -19,6 +19,34 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
   const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
 
   const hasMultipleMedia = item.media.length > 1;
+
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'ArrowRight' && hasMultipleMedia) {
+        e.preventDefault();
+        nextMedia();
+      } else if (e.key === 'ArrowLeft' && hasMultipleMedia) {
+        e.preventDefault();
+        prevMedia();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, nextMedia, prevMedia, hasMultipleMedia]);
 
   return (
     <div 
@@ -41,7 +69,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={mediaUrl} src={coverUrl} alt={item.description || item.title || item.slug} className="max-w-full max-h-full object-contain" />
+            <img key={mediaUrl} src={mediaUrl} alt={item.description || item.title || item.slug} className="max-w-full max-h-full object-contain" loading="eager" />
           )
         ) : (
           <div className="theme-panel flex h-full w-full items-center justify-center px-6 text-center text-sm font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
@@ -74,6 +102,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
         )}
       </div>
       <button 
+        ref={closeBtnRef}
         aria-label="关闭预览"
         onClick={onClose}
         className="absolute top-6 right-6 text-white text-3xl opacity-50 hover:opacity-100 z-[210]"
