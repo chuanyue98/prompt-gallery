@@ -918,3 +918,29 @@ body.lightbox-active nav.fixed {
 @media (max-width: 460px) {
   .masonry { column-count: 1; }
 }
+
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-shimmer {
+  min-height: 320px;
+  background: linear-gradient(
+    100deg,
+    var(--surface-muted) 30%,
+    color-mix(in srgb, var(--surface-muted) 50%, transparent) 50%,
+    var(--surface-muted) 70%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; }
+}

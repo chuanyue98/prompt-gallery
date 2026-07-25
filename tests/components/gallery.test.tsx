@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/app/page';
@@ -450,6 +451,7 @@ describe('DetailModal direct tests', () => {
     onCopy: vi.fn(),
     copiedSlug: null as string | null,
     onLightboxOpen: vi.fn(),
+    deleteError: null,
     showDeleteForm: false,
     setShowDeleteForm: vi.fn(),
     deleteReason: '',
@@ -649,9 +651,7 @@ describe('Gallery error and edge cases', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows error alert when delete request fails with !response.ok', async () => {
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
+  it('shows inline error when delete request fails with !response.ok', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => galleryItems })
       .mockResolvedValueOnce({ ok: false, json: async () => ({ error: '权限不足' }) })
@@ -662,13 +662,11 @@ describe('Gallery error and edge cases', () => {
     await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
     await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Reason');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
-    await waitFor(() => expect(alertMock).toHaveBeenCalledWith('权限不足'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('权限不足');
     vi.unstubAllGlobals();
   });
 
-  it('shows error alert when delete fetch throws', async () => {
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
+  it('shows inline error when delete fetch throws', async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => galleryItems })
       .mockRejectedValueOnce(new Error('Network crash'))
@@ -679,7 +677,126 @@ describe('Gallery error and edge cases', () => {
     await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
     await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Reason');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
-    await waitFor(() => expect(alertMock).toHaveBeenCalledWith('Network crash'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network crash');
+    vi.unstubAllGlobals();
+  });
+});
+
+
+describe('P0 UX improvements', () => {
+  it('Lightbox renders original src (mediaUrl), not cover', () => {
+    const item: GalleryItem = {
+      slug: 'diff-item',
+      description: 'Different cover and src',
+      tags: ['diff'],
+      mediaPath: '/media/diff/',
+      media: [{ type: 'image', src: 'full.png', cover: 'thumb.png' }],
+      content: '### Prompt\nDiff',
+    };
+    render(<Lightbox item={item} onClose={vi.fn()} />);
+    const img = document.querySelector('img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('/media/diff/full.png');
+  });
+
+  it('DetailModal closes on Escape', () => {
+    const onClose = vi.fn();
+    render(<DetailModal item={galleryItems[1]} onClose={onClose} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+
+  it('Lightbox closes on Escape', () => {
+    const onClose = vi.fn();
+    render(<Lightbox item={galleryItems[1]} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+
+  it('hides Hero when search is active', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => galleryItems }));
+    const user = userEvent.setup();
+    function Controlled() {
+      const [s, setS] = useState('');
+      return <Gallery search={s} onSearchChange={setS} />;
+    }
+    render(<Controlled />);
+    await screen.findByTestId('gallery-card-video-item');
+    expect(screen.getByTestId('hero-video')).toBeInTheDocument();
+    await user.type(screen.getByTestId('gallery-search'), 'portrait');
+    await waitFor(() => expect(screen.queryByTestId('hero-video')).not.toBeInTheDocument());
+    vi.unstubAllGlobals();
+  });
+
+
+
+  it('Lightbox navigates media with arrow keys when multiple media exist', () => {
+    const multiMediaItem: GalleryItem = {
+      slug: 'multi-item',
+      description: 'Multiple media item',
+      tags: ['multi'],
+      mediaPath: '/media/multi/',
+      media: [
+        { type: 'image', src: 'a.png', cover: 'a.png' },
+        { type: 'image', src: 'b.png', cover: 'b.png' },
+      ],
+      content: '### Prompt\nMulti',
+    };
+    render(<Lightbox item={multiMediaItem} onClose={vi.fn()} />);
+    expect((document.querySelector('img') as HTMLImageElement).getAttribute('src')).toBe('/media/multi/a.png');
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    expect((document.querySelector('img') as HTMLImageElement).getAttribute('src')).toBe('/media/multi/b.png');
+    fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    expect((document.querySelector('img') as HTMLImageElement).getAttribute('src')).toBe('/media/multi/a.png');
+  });
+
+  it('DetailModal navigates media with arrow keys when multiple media exist', () => {
+    const multiMediaItem: GalleryItem = {
+      slug: 'multi-detail',
+      description: 'Multiple media detail',
+      tags: ['multi'],
+      mediaPath: '/media/multi-detail/',
+      media: [
+        { type: 'image', src: 'a.png', cover: 'a.png' },
+        { type: 'image', src: 'b.png', cover: 'b.png' },
+      ],
+      content: '### Prompt\nMulti',
+    };
+    const { container } = render(<DetailModal item={multiMediaItem} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    const mediaImg = container.querySelector('img') as HTMLImageElement | null;
+    const beforeSrc = mediaImg?.getAttribute('src');
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    const afterImg = container.querySelector('img') as HTMLImageElement | null;
+    expect(afterImg?.getAttribute('src')).not.toBe(beforeSrc);
+    fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    const finalImg = container.querySelector('img') as HTMLImageElement | null;
+    expect(finalImg?.getAttribute('src')).toBe(beforeSrc);
+  });
+
+  it('DetailModal opens lightbox on zoom button click', () => {
+    const onLightboxOpen = vi.fn();
+    const { container } = render(<DetailModal item={galleryItems[1]} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={onLightboxOpen} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    const zoomBtn = container.querySelector('.modal-play') as HTMLButtonElement | null;
+    expect(zoomBtn).not.toBeNull();
+    fireEvent.click(zoomBtn!);
+    expect(onLightboxOpen).toHaveBeenCalled();
+  });
+
+  it('Gallery hero copy button calls copyToClipboard', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => galleryItems }));
+    const user = userEvent.setup();
+    render(<Gallery />);
+    await screen.findByTestId('gallery-card-video-item');
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(copyToClipboard).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows skeleton cards during loading', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    render(<Gallery />);
+    expect(document.querySelector('.skeleton-shimmer')).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 });
