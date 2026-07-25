@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import type { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { IconCopy, IconX, IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface DetailModalProps {
@@ -37,7 +38,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   isDeleting,
   deleteSuccess,
 }) => {
-  const { index: currentMediaIndex, next: nextMedia, prev: prevMedia } = useMediaNavigation(item.media.length);
+  const { index: currentMediaIndex, next: nextMedia, prev: prevMedia, swipeHandlers } = useMediaNavigation(item.media.length);
   const currentMedia = item.media[currentMediaIndex] || item.media[0];
   const mediaUrl = getGalleryMediaUrl(item, 'src', currentMediaIndex);
   const coverUrl = getGalleryMediaUrl(item, 'cover', currentMediaIndex);
@@ -58,8 +59,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const hasMultipleMedia = item.media.length > 1;
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  useFocusTrap(containerRef, true);
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement as HTMLElement | null;
@@ -87,13 +91,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   }, [onClose, nextMedia, prevMedia, hasMultipleMedia]);
 
   return (
-    <div className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" onClick={onClose}>
+    <div ref={containerRef} className="modal-scrim fixed inset-0 z-[120]" role="dialog" aria-modal="true" aria-label={`${item.title || item.slug} 详情`} onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button ref={closeBtnRef} aria-label="关闭详情弹层" className="modal-close" onClick={onClose}>
           <IconX size={18} />
         </button>
 
-        <div className={`modal-media group relative cursor-zoom-in max-sm:max-h-[35vh] ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen}>
+        <div className={`modal-media group relative cursor-zoom-in max-sm:max-h-[35vh] ${isVideo ? 'modal-media-video' : ''}`} onClick={onLightboxOpen} {...swipeHandlers}>
           {mediaUrl ? (
             isVideo ? (
               <video
@@ -125,7 +129,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 type="button"
                 onClick={prevMedia}
                 aria-label="Previous media"
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute left-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-0 [@media(hover:hover)]:sm:group-hover:opacity-100"
               >
                 <IconArrowLeft size={20} />
               </button>
@@ -133,7 +137,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 type="button"
                 onClick={nextMedia}
                 aria-label="Next media"
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-0 [@media(hover:hover)]:sm:group-hover:opacity-100"
               >
                 <IconArrowRight size={20} />
               </button>

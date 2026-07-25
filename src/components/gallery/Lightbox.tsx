@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { IconArrowLeft, IconArrowRight } from '@/components/icons';
 
 interface LightboxProps {
@@ -12,7 +13,7 @@ interface LightboxProps {
 }
 
 export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
-  const { index: currentIndex, next: nextMedia, prev: prevMedia } = useMediaNavigation(item.media.length);
+  const { index: currentIndex, next: nextMedia, prev: prevMedia, swipeHandlers } = useMediaNavigation(item.media.length);
   const currentMedia = item.media[currentIndex] || item.media[0];
   const mediaUrl = getGalleryMediaUrl(item, 'src', currentIndex);
   const coverUrl = getGalleryMediaUrl(item, 'cover', currentIndex);
@@ -20,8 +21,11 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
 
   const hasMultipleMedia = item.media.length > 1;
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  useFocusTrap(containerRef, true);
 
   useEffect(() => {
     previouslyFocused.current = document.activeElement as HTMLElement | null;
@@ -49,11 +53,19 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
   }, [onClose, nextMedia, prevMedia, hasMultipleMedia]);
 
   return (
-    <div 
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title || item.slug || '媒体预览'}
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-200 cursor-zoom-out"
       onClick={onClose}
     >
-      <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="relative w-full h-full flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+        {...swipeHandlers}
+      >
         {mediaUrl ? (
           isVideo ? (
             <video
@@ -83,7 +95,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
               type="button"
               onClick={prevMedia}
               aria-label="Previous media"
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-4 text-white backdrop-blur-md transition-all hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-white/10 p-3 text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
               <IconArrowLeft size={24} />
             </button>
@@ -91,7 +103,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
               type="button"
               onClick={nextMedia}
               aria-label="Next media"
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-4 text-white backdrop-blur-md transition-all hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-white/10 p-3 text-white backdrop-blur-md transition-all hover:bg-white/20"
             >
               <IconArrowRight size={24} />
             </button>
@@ -101,11 +113,11 @@ export const Lightbox: React.FC<LightboxProps> = ({ item, onClose }) => {
           </>
         )}
       </div>
-      <button 
+      <button
         ref={closeBtnRef}
         aria-label="关闭预览"
         onClick={onClose}
-        className="absolute top-6 right-6 text-white text-3xl opacity-50 hover:opacity-100 z-[210]"
+        className="absolute top-6 right-6 flex size-12 items-center justify-center rounded-full bg-white/10 text-white text-2xl opacity-70 hover:opacity-100 hover:bg-white/20 z-[210] transition-all"
       >
         ✕
       </button>

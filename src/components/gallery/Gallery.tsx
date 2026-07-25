@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { GalleryItem } from '@/types/gallery';
-import { copyToClipboard } from '@/lib/utils';
+import { copyToClipboard, fetchWithTimeout } from '@/lib/utils';
+import { showToast } from '@/components/ui/Toast';
 import { filterGalleryItems, getGalleryMediaUrl, isExternalUrl, isVideoAsset } from '@/lib/gallery';
 
 import GalleryHeader from './GalleryHeader';
@@ -99,43 +100,29 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadGalleryData() {
-      try {
-        const response = await fetch('/gallery-data.json');
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = (await response.json()) as GalleryItem[];
-        if (!isMounted) {
-          return;
-        }
-
-        setItems(data);
-        setLoadError(null);
-      } catch (error) {
-        console.error('Failed to load gallery data:', error);
-        if (!isMounted) {
-          return;
-        }
-
-        setItems([]);
-        setLoadError('内容数据加载失败，请稍后刷新重试。');
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+  const loadGalleryData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await fetchWithTimeout('/gallery-data.json', { timeoutMs: 15000 });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+      const data = (await response.json()) as GalleryItem[];
+      setItems(data);
+      setLoadError(null);
+    } catch (error) {
+      console.error('Failed to load gallery data:', error);
+      setItems([]);
+      setLoadError('内容数据加载失败，请检查网络后重试。');
+    } finally {
+      setIsLoading(false);
     }
-
-    loadGalleryData();
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadGalleryData();
+  }, [loadGalleryData]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -161,7 +148,10 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
   const handleCopy = useCallback(async (text: string, slug: string) => {
     if (await copyToClipboard(text)) {
       setCopiedSlug(slug);
+      showToast('已复制到剪贴板', 'success');
       setTimeout(() => setCopiedSlug(null), 2000);
+    } else {
+      showToast('复制失败，请手动选择', 'error');
     }
   }, []);
 
@@ -173,7 +163,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const response = await fetch('/api/contribute?action=delete', {
+      const response = await fetchWithTimeout('/api/contribute?action=delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,6 +171,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
           type: item.media[0].type,
           reason: deleteReason.trim(),
         }),
+        timeoutMs: 15000,
       });
 
       const result = await response.json();
@@ -191,11 +182,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
       setDeleteSuccess(true);
       setDeleteReason('');
       setDeleteError(null);
-      setTimeout(() => {
-        setSelectedItem(null);
-        setDeleteSuccess(false);
-        setShowDeleteForm(false);
-      }, 3000);
+      showToast('下架申请已提交', 'success');
     } catch (error) {
       console.error('Delete Request Error:', error);
       setDeleteError(error instanceof Error ? error.message : '提交失败，请稍后重试');
@@ -235,8 +222,17 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
       />
 
       {!isLoading && loadError ? (
-        <div className="theme-danger-button mt-10 rounded-[2rem] px-6 py-5 text-center text-sm">
-          {loadError}
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <div className="theme-danger-button rounded-[2rem] px-6 py-5 text-center text-sm">
+            {loadError}
+          </div>
+          <button
+            type="button"
+            onClick={loadGalleryData}
+            className="theme-primary-button inline-flex min-h-[44px] items-center rounded-full px-6 py-2.5 text-xs font-black uppercase tracking-[0.18em]"
+          >
+            重试加载
+          </button>
         </div>
       ) : null}
 

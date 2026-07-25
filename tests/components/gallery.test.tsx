@@ -14,6 +14,12 @@ import type { GalleryItem } from '@/types/gallery';
 
 vi.mock('@/lib/utils', () => ({
   copyToClipboard: vi.fn().mockResolvedValue(true),
+  fetchWithTimeout: vi.fn((url, options) => fetch(url, options)),
+}));
+
+vi.mock('@/components/ui/Toast', () => ({
+  showToast: vi.fn(),
+  ToastContainer: () => null,
 }));
 
 const galleryItems: GalleryItem[] = [
@@ -555,14 +561,14 @@ describe('Gallery error and edge cases', () => {
   it('shows error message when fetch fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network Error')));
     render(<Gallery />);
-    expect(await screen.findByText('内容数据加载失败，请稍后刷新重试。')).toBeInTheDocument();
+    expect(await screen.findByText('内容数据加载失败，请检查网络后重试。')).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 
   it('shows error message when response is not ok', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
     render(<Gallery />);
-    expect(await screen.findByText('内容数据加载失败，请稍后刷新重试。')).toBeInTheDocument();
+    expect(await screen.findByText('内容数据加载失败，请检查网络后重试。')).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 

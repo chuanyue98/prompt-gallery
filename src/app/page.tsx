@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Gallery from '@/components/gallery/Gallery';
+import { ToastContainer } from '@/components/ui/Toast';
 
 export default function Home() {
   const [search, setSearch] = useState('');
@@ -17,7 +18,8 @@ export default function Home() {
       }} />
       <div className="relative z-10 pt-24">
         <Gallery search={search} onSearchChange={setSearch} />
-      </div>
+        </div>
+      <ToastContainer />
     </main>
   );
 }

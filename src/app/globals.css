@@ -15,7 +15,7 @@
   --border-strong: rgba(255, 255, 255, 0.14);
   --text-primary: rgba(255, 255, 255, 0.96);
   --text-secondary: rgba(255, 255, 255, 0.72);
-  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-muted: rgba(255, 255, 255, 0.62);
   --text-contrast: #0a0a0d;
   --success-bg: rgba(76, 175, 80, 0.18);
   --success-border: rgba(76, 175, 80, 0.28);
@@ -55,7 +55,7 @@
   --border-strong: rgba(111, 124, 255, 0.24);
   --text-primary: #2f4056;
   --text-secondary: #5e718b;
-  --text-muted: #93a2b7;
+  --text-muted: #5e718b;
   --text-contrast: #f8fbff;
   --overlay-backdrop: rgba(217, 227, 238, 0.78);
   --media-stage: linear-gradient(180deg, rgba(247, 250, 253, 0.98), rgba(229, 235, 242, 1));
@@ -78,7 +78,7 @@
   --border-strong: rgba(194, 107, 27, 0.2);
   --text-primary: #261d17;
   --text-secondary: #65574e;
-  --text-muted: #ad9e93;
+  --text-muted: #7a6a5d;
   --text-contrast: #fffdf8;
   --overlay-backdrop: rgba(249, 244, 235, 0.82);
   --media-stage: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 241, 233, 1));
@@ -246,6 +246,16 @@ body.lightbox-active nav.fixed {
   outline: none;
   color: var(--text-primary);
   font-size: 13.5px;
+}
+.search input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .search kbd {
@@ -912,7 +922,8 @@ body.lightbox-active nav.fixed {
     min-height: 260px;
     max-height: 62vh;
   }
-  .modal { grid-template-rows: 30vh 1fr; }
+  .modal { grid-template-rows: minmax(50vh, 1fr) auto; }
+  .modal-side-scroll { max-height: 40vh; overflow-y: auto; }
 }
 
 @media (max-width: 460px) {
