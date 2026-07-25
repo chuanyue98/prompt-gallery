@@ -118,7 +118,7 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
                 aria-haspopup="listbox"
                 data-testid="theme-trigger"
                 onClick={() => setIsThemeOpen((open) => !open)}
-                className="theme-trigger-lite"
+                className="theme-trigger-lite min-h-[44px]"
               >
                 <span className="hidden sm:block">THEME</span>
                 <span>{THEME_OPTIONS.find((option) => option.id === theme)?.label}</span>
@@ -160,7 +160,7 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
               type="button"
               aria-label="打开投稿弹层"
               onClick={() => setIsContributeOpen(true)}
-              className="primary-btn"
+              className="primary-btn min-h-[44px]"
             >
               <span className="sm:hidden">+</span>
               <span className="hidden sm:inline">我要投稿</span>

@@ -39,7 +39,7 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
             key={cat.id}
             type="button"
             onClick={() => onCategoryChange(cat.id)}
-            className={`cat ${category === cat.id ? 'on' : ''}`}
+            className={`cat ${category === cat.id ? 'on' : ''} min-h-[44px]`}
           >
             {cat.label}
           </button>

@@ -9,6 +9,7 @@ import {
   safelyPlayVideo,
 } from '@/lib/gallery';
 import { IconCopy } from '@/components/icons';
+import { useVideoPreview } from '@/lib/hooks/useVideoPreview';
 
 interface GalleryCardProps {
   item: GalleryItem;
@@ -23,11 +24,11 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
   onCopy,
   isCopied,
 }) => {
-  const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const coverUrl = getGalleryMediaUrl(item, 'cover');
   const srcUrl = getGalleryMediaUrl(item, 'src');
   const primaryMediaType = getPrimaryMediaType(item);
   const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(srcUrl));
+  const videoRef = useVideoPreview(isVideo);
 
   const playVideoPreview = () => {
     if (videoRef.current) {
@@ -40,7 +41,6 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
     if (!video) {
       return;
     }
-
     video.pause();
     video.currentTime = 0;
   };
@@ -76,7 +76,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
           />
         ) : coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt={item.description || item.title || item.slug} />
+          <img src={coverUrl} alt={item.description || item.title || item.slug} loading="lazy" decoding="async" />
         ) : (
           <div className="theme-panel flex min-h-[320px] items-center justify-center text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
             暂无媒体内容
@@ -101,7 +101,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
               </div>
               <button
                 aria-label={`${item.slug} quick copy`}
-                className="copy-btn"
+                className="copy-btn min-h-[44px] inline-flex items-center gap-1 px-3 py-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   onCopy(item.content, item.slug);

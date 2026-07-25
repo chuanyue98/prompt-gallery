@@ -83,14 +83,14 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
 
       <div className="space-y-4">
         <div>
-          <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标题 (Title - 必填)</label>
-          <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="例如：赛博朋克猫咪" />
+          <label htmlFor="contribute-title" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标题 (Title - 必填)</label>
+          <input id="contribute-title" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="例如：赛博朋克猫咪" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="relative">
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">模型 (Engine)</label>
-            <input
+            <label htmlFor="contribute-model" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">模型 (Engine)</label>
+            <input id="contribute-model"
               value={formData.model}
               role="combobox"
               aria-expanded={isModelFocused && filteredModelOptions.length > 0}
@@ -129,25 +129,25 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
             ) : null}
           </div>
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标签 (逗号分隔)</label>
-            <input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="科幻, 电影感, 写实" />
+            <label htmlFor="contribute-tags" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">标签 (逗号分隔)</label>
+            <input id="contribute-tags" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="科幻, 电影感, 写实" />
           </div>
         </div>
 
         <div>
-          <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">描述 (可选)</label>
-          <textarea rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="theme-input w-full resize-none rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="补充画面风格、主体或用途，帮助区分作品。" />
+          <label htmlFor="contribute-description" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">描述 (可选)</label>
+          <textarea id="contribute-description" rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="theme-input w-full resize-none rounded-xl px-4 py-2.5 sm:py-3 text-sm" placeholder="补充画面风格、主体或用途，帮助区分作品。" />
         </div>
 
         <div>
-          <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">提示词 (Prompt Syntax)</label>
-          <textarea required rows={4} value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} className="theme-input w-full resize-none rounded-xl px-4 py-2.5 sm:py-3 font-mono text-sm" placeholder="完整咒语..." />
+          <label htmlFor="contribute-prompt" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">提示词 (Prompt Syntax)</label>
+          <textarea id="contribute-prompt" required rows={4} value={formData.prompt} onChange={e => setFormData({...formData, prompt: e.target.value})} className="theme-input w-full resize-none rounded-xl px-4 py-2.5 sm:py-3 font-mono text-sm" placeholder="完整咒语..." />
         </div>
 
         {submissionMode === 'mediaUrl' && (
           <div>
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Media URL</label>
-            <input
+            <label htmlFor="contribute-media-url" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Media URL</label>
+            <input id="contribute-media-url"
               value={formData.mediaUrl}
               onChange={e => setFormData({ ...formData, mediaUrl: e.target.value })}
               className="theme-input w-full rounded-xl px-4 py-2.5 sm:py-3 text-sm"
@@ -157,9 +157,9 @@ export const ContributeForm: React.FC<ContributeFormProps> = ({
         )}
 
         <div>
-          <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Source URL (可选)</label>
+          <label htmlFor="contribute-source-url" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Source URL (可选)</label>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
+            <input id="contribute-source-url"
               value={formData.sourceUrl}
               onChange={e => setFormData({ ...formData, sourceUrl: e.target.value })}
               className="theme-input flex-grow rounded-xl px-4 py-2.5 sm:py-3 text-sm"
