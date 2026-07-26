@@ -5,7 +5,7 @@ import type { GalleryItem } from '@/types/gallery';
 import { getGalleryMediaUrl, isVideoAsset } from '@/lib/gallery';
 import { useMediaNavigation } from '@/lib/hooks/useMediaNavigation';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
-import { IconCopy, IconX, IconArrowLeft, IconArrowRight } from '@/components/icons';
+import { IconCopy, IconX, IconArrowLeft, IconArrowRight, IconHeart, IconHeartFilled, IconExternalLink } from '@/components/icons';
 
 interface DetailModalProps {
   item: GalleryItem;
@@ -13,6 +13,8 @@ interface DetailModalProps {
   onCopy: (text: string, slug: string) => void;
   copiedSlug: string | null;
   onLightboxOpen: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: (slug: string) => void;
   deleteError: string | null;
   showDeleteForm: boolean;
   setShowDeleteForm: (show: boolean) => void;
@@ -21,6 +23,7 @@ interface DetailModalProps {
   onDeleteRequest: (item: GalleryItem) => void;
   isDeleting: boolean;
   deleteSuccess: boolean;
+  deletePrUrl: string | null;
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({
@@ -29,6 +32,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   onCopy,
   copiedSlug,
   onLightboxOpen,
+  isFavorite,
+  onToggleFavorite,
   deleteError,
   showDeleteForm,
   setShowDeleteForm,
@@ -37,6 +42,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   onDeleteRequest,
   isDeleting,
   deleteSuccess,
+  deletePrUrl,
 }) => {
   const { index: currentMediaIndex, next: nextMedia, prev: prevMedia, swipeHandlers } = useMediaNavigation(item.media.length);
   const currentMedia = item.media[currentMediaIndex] || item.media[0];
@@ -45,16 +51,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const tags = item.tags ?? [];
   const sourceUrl = item.sourceUrl?.trim() || '';
   const safeSourceUrl = /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '';
-  
+
   const isVideo = currentMedia?.type === 'video' || (!currentMedia?.type && isVideoAsset(mediaUrl));
   const isCopied = copiedSlug === 'modal';
   const cleanedPrompt = item.content.replace(/[\s\S]*?###[^\n]*\n?/, '').trim();
   const promptWordCount = cleanedPrompt.split(/\s+/).filter(Boolean).length;
-  const promptParams = [
-    ['Media', isVideo ? 'Video' : 'Image'],
-    ['Model', item.model ?? 'Prompt'],
-    ['Tags', tags.length ? tags.join(', ') : 'None'],
-    ['Words', String(promptWordCount)],
+  const promptParams: [string, string][] = [
+    ['类型', isVideo ? '视频' : '图片'],
+    ['模型', item.model ?? '提示词'],
+    ['标签', tags.length ? tags.join('、') : '无'],
+    ['字数', String(promptWordCount)],
   ];
 
   const hasMultipleMedia = item.media.length > 1;
@@ -128,16 +134,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <button
                 type="button"
                 onClick={prevMedia}
-                aria-label="Previous media"
-                className="absolute left-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-0 [@media(hover:hover)]:sm:group-hover:opacity-100"
+                aria-label="上一张"
+                className="absolute left-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-50 [@media(hover:hover)]:sm:group-hover:opacity-100"
               >
                 <IconArrowLeft size={20} />
               </button>
               <button
                 type="button"
                 onClick={nextMedia}
-                aria-label="Next media"
-                className="absolute right-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-0 [@media(hover:hover)]:sm:group-hover:opacity-100"
+                aria-label="下一张"
+                className="absolute right-4 top-1/2 -translate-y-1/2 flex size-12 items-center justify-center rounded-full bg-black/40 p-3 text-white backdrop-blur-md transition-all hover:bg-black/60 [@media(hover:hover)]:sm:opacity-50 [@media(hover:hover)]:sm:group-hover:opacity-100"
               >
                 <IconArrowRight size={20} />
               </button>
@@ -165,8 +171,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
         <div className="modal-side">
           <div className="modal-side-scroll">
-            <div className="modal-head">
+            <div className="modal-head flex items-center gap-3">
               {item.model ? <div className="model-tag">{item.model}</div> : <span />}
+              <button
+                type="button"
+                aria-label={isFavorite ? '取消收藏' : '收藏'}
+                aria-pressed={isFavorite}
+                className={`favorite-btn favorite-btn-modal min-h-[36px] inline-flex items-center justify-center size-9 rounded-full transition-all ${isFavorite ? 'is-active' : ''}`}
+                onClick={() => onToggleFavorite(item.slug)}
+              >
+                {isFavorite ? <IconHeartFilled size={14} /> : <IconHeart size={14} />}
+              </button>
             </div>
 
             <h2 className="modal-title">{item.title || item.slug}</h2>
@@ -174,19 +189,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <div className="modal-author">
               <div className="avatar lg">{String(item.title || item.slug).slice(0, 2).toUpperCase()}</div>
               <div>
-                <div className="aname">{item.model ?? 'Prompt Archive'}</div>
-                <div className="acat">{isVideo ? 'Video' : 'Image'} / {tags[0] ?? 'Reference'}</div>
+                <div className="aname">{item.model ?? '提示词存档'}</div>
+                <div className="acat">{isVideo ? '视频' : '图片'} / {tags[0] ?? '参考'}</div>
               </div>
               {safeSourceUrl ? (
-                <a href={safeSourceUrl} target="_blank" rel="noreferrer" className="follow-btn">Source</a>
+                <a href={safeSourceUrl} target="_blank" rel="noreferrer" className="follow-btn">查看原帖 ↗</a>
               ) : null}
             </div>
 
             <div className="prompt-block">
               <div className="block-label">
-                <span>Prompt</span>
+                <span>提示词</span>
                  <span className="copy-inline">
-                  <IconCopy size={14} /> Prompt Copy
+                  <IconCopy size={14} /> 点击下方复制
                 </span>
               </div>
               <p className="prompt-text">{cleanedPrompt}</p>
@@ -194,7 +209,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
             <div className="params-block">
               <div className="block-label">
-                <span>Parameters</span>
+                <span>参数</span>
               </div>
               <div className="params-grid">
                 {promptParams.map(([key, value]) => (
@@ -213,22 +228,36 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 className={`cta primary ${isCopied ? 'theme-success-surface' : ''}`}
                 onClick={() => onCopy(item.content, 'modal')}
               >
-                  <IconCopy size={14} /> {isCopied ? 'COPIED ✓' : 'COPY PROMPT'}
+                  <IconCopy size={14} /> {isCopied ? '已复制 ✓' : '复制提示词'}
               </button>
+            </div>
+
+            <div className="shortcut-hint">
+              快捷键：Esc 关闭{hasMultipleMedia ? ' · ← → 切换媒体' : ''}
             </div>
 
             <div className="mt-auto pt-2">
               {deleteSuccess ? (
                 <div className="theme-success-surface rounded-[12px] px-4 py-4 text-center">
                   <span className="block text-xs font-black uppercase tracking-[0.18em]">✅ 申请已提交</span>
-                  <p className="mt-1 text-[10px] opacity-80">GitHub PR 已创建，请等待管理员审核</p>
+                  <p className="mt-1 text-[10px] opacity-80">下架申请的 PR 已创建，请等待管理员审核</p>
+                  {deletePrUrl ? (
+                    <a
+                      href={deletePrUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-[var(--accent)] hover:underline"
+                    >
+                      <IconExternalLink size={12} /> 查看 PR
+                    </a>
+                  ) : null}
                 </div>
               ) : !showDeleteForm ? (
                 <button
                   onClick={() => setShowDeleteForm(true)}
-                  className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]"
+                  className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                 >
-                  申请下架 (TAKE DOWN)
+                  申请下架
                 </button>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -240,11 +269,23 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">
                     申请下架原因
                   </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['图片失效', '侵权', '内容不当', '其他'].map((reason) => (
+                      <button
+                        key={reason}
+                        type="button"
+                        onClick={() => setDeleteReason(reason)}
+                        className="theme-chip rounded-full px-3 py-1 text-[10px] font-bold"
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     value={deleteReason}
                     onChange={(e) => setDeleteReason(e.target.value)}
-                    placeholder="例如：图片失效、侵权..."
+                    placeholder="选择或填写原因..."
                     className="theme-input w-full rounded-xl px-4 py-2.5 text-xs"
                   />
                   <div className="flex gap-2">

@@ -132,6 +132,6 @@ describe('Navbar component', () => {
     
     // 检查主题标签的精简类
     const themeTrigger = screen.getByTestId('theme-trigger');
-    expect(themeTrigger.querySelector('.hidden.sm\\:block')).toHaveTextContent('THEME');
+    expect(themeTrigger.querySelector('.hidden.sm\\:block')).toHaveTextContent('主题');
   });
 });

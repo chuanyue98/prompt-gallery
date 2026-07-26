@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ContributeModal from '@/components/gallery/ContributeModal';
 import {
   applyThemeToDocument,
@@ -10,21 +10,37 @@ import {
   THEME_OPTIONS,
   type ThemeId,
 } from '@/lib/theme';
-import { IconChevronDown, IconSearch } from '@/components/icons';
+import { IconChevronDown, IconKeyboard, IconSearch } from '@/components/icons';
+
+export interface NavbarHandle {
+  focusSearch: () => void;
+}
 
 interface NavbarProps {
   search?: string;
   onSearchChange?: (value: string) => void;
+  onToggleShortcuts?: () => void;
 }
 
-export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
+const Navbar = forwardRef<NavbarHandle, NavbarProps>(function Navbar(
+  { search, onSearchChange, onToggleShortcuts },
+  ref
+) {
   const [mounted, setMounted] = useState(false);
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
   const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchValue = search ?? localSearch;
+
+  useImperativeHandle(ref, () => ({
+    focusSearch: () => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    },
+  }));
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,21 +111,33 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
             <span className="brand-name">
               Prompt <span className="hidden xs:inline">Gallery</span>
             </span>
-            <span className="brand-tag hidden sm:inline">/ archive</span>
+            <span className="brand-tag hidden sm:inline">/ 提示词集</span>
           </button>
 
           <div className="search">
             <IconSearch />
             <input
+              ref={searchInputRef}
               aria-label="搜索灵感"
               value={searchValue}
               placeholder="搜索标题、模型、标签或提示词..."
               spellCheck={false}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
+            <kbd className="search-kbd" aria-hidden="true">/</kbd>
           </div>
 
           <div className="nav-right">
+            <button
+              type="button"
+              aria-label="键盘快捷键"
+              title="键盘快捷键 (?)"
+              onClick={onToggleShortcuts}
+              className="theme-trigger-lite min-h-[44px]"
+            >
+              <IconKeyboard size={16} />
+            </button>
+
             <div ref={themeMenuRef} data-testid="theme-switcher" className="relative">
               <button
                 type="button"
@@ -120,7 +148,7 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
                 onClick={() => setIsThemeOpen((open) => !open)}
                 className="theme-trigger-lite min-h-[44px]"
               >
-                <span className="hidden sm:block">THEME</span>
+                <span className="hidden sm:block">主题</span>
                 <span>{THEME_OPTIONS.find((option) => option.id === theme)?.label}</span>
                 <IconChevronDown size={16} />
               </button>
@@ -172,4 +200,6 @@ export default function Navbar({ search, onSearchChange }: NavbarProps = {}) {
       <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} />
     </>
   );
-}
+});
+
+export default Navbar;
