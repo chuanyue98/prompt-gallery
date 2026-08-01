@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 const STORAGE_KEY = 'prompt-gallery-favorites';
 
-let cachedFavorites: Set<string> | null = null;
-const listeners = new Set<(favorites: Set<string>) => void>();
+const EMPTY_FAVORITES: Set<string> = new Set<string>();
+
+let currentFavorites: Set<string> = EMPTY_FAVORITES;
+const listeners = new Set<() => void>();
+let initialized = false;
 
 function readFromStorage(): Set<string> {
-  if (cachedFavorites) return cachedFavorites;
-
   if (typeof window === 'undefined') {
     return new Set();
   }
@@ -15,15 +16,15 @@ function readFromStorage(): Set<string> {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const arr = raw ? (JSON.parse(raw) as string[]) : [];
-    cachedFavorites = new Set(Array.isArray(arr) ? arr : []);
+    return new Set(Array.isArray(arr) ? arr : []);
   } catch {
-    cachedFavorites = new Set();
+    return new Set();
   }
-  return cachedFavorites;
 }
 
 function writeToStorage(next: Set<string>) {
-  cachedFavorites = next;
+  currentFavorites = next;
+
   if (typeof window !== 'undefined') {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
@@ -31,19 +32,36 @@ function writeToStorage(next: Set<string>) {
       // Ignore storage failures (quota / privacy mode).
     }
   }
-  for (const listener of listeners) listener(next);
+
+  for (const listener of listeners) listener();
+}
+
+function subscribe(onStoreChange: () => void) {
+  // 首个订阅者到来时才读 localStorage：hydration 首帧用的是 server snapshot，
+  // React 随后会重新取快照并切到真实收藏，因此不会出现 mismatch。
+  if (!initialized) {
+    initialized = true;
+    currentFavorites = readFromStorage();
+  }
+
+  listeners.add(onStoreChange);
+  return () => {
+    listeners.delete(onStoreChange);
+  };
+}
+
+const getSnapshot = () => currentFavorites;
+const getServerSnapshot = () => EMPTY_FAVORITES;
+
+/** 仅供测试使用：清空模块级缓存与订阅者。 */
+export function __resetFavoritesForTests() {
+  currentFavorites = EMPTY_FAVORITES;
+  listeners.clear();
+  initialized = false;
 }
 
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<Set<string>>(() => readFromStorage());
-
-  useEffect(() => {
-    const listener = (next: Set<string>) => setFavorites(new Set(next));
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  }, []);
+  const favorites = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const isFavorite = useCallback(
     (slug: string) => favorites.has(slug),
@@ -51,7 +69,7 @@ export function useFavorites() {
   );
 
   const toggleFavorite = useCallback((slug: string) => {
-    const next = new Set(readFromStorage());
+    const next = new Set(currentFavorites);
     if (next.has(slug)) {
       next.delete(slug);
     } else {

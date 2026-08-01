@@ -99,7 +99,7 @@ export const ShortcutsPanel: React.FC<ShortcutsPanelProps> = ({ isOpen, onClose 
         </div>
 
         <p className="mt-6 text-[10px] text-[var(--text-muted)]">
-          在输入框内输入时，快捷键不会触发。
+          在输入框内输入时，除 Esc 外的快捷键不会触发。
         </p>
       </div>
     </div>

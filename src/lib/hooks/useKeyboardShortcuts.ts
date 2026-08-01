@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface ShortcutHandlers {
   onSearchFocus?: () => void;
@@ -15,14 +15,22 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers, enabled: boolean = true) {
+  // 调用方通常直接传对象字面量，每次渲染都是新引用。
+  // 把它放进 ref，监听器就只在 enabled 变化时绑定一次，
+  // 而不是每敲一个字符就解绑重绑。
+  const handlersRef = useRef(handlers);
+
+  // ref 只能在提交后写，渲染期间赋值会被 react-hooks 规则拦下。
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
+
   useEffect(() => {
     if (!enabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (handlers.onEscape) {
-          handlers.onEscape();
-        }
+        handlersRef.current.onEscape?.();
         return;
       }
 
@@ -30,20 +38,20 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers, enabled: boolea
 
       if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        handlers.onSearchFocus?.();
+        handlersRef.current.onSearchFocus?.();
         return;
       }
 
       if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        handlers.onToggleShortcuts?.();
+        handlersRef.current.onToggleShortcuts?.();
         return;
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handlers, enabled]);
+  }, [enabled]);
 }
 
 export interface ShortcutItem {
