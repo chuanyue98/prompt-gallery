@@ -26,6 +26,7 @@ vi.mock('@/lib/github', async (importOriginal) => {
     getOctokit: vi.fn(),
     createContributionPullRequest: vi.fn(),
     requestDeletionPullRequest: vi.fn(),
+    uploadMediaAsset: vi.fn(),
     inferMediaTypeFromUrl: actual.inferMediaTypeFromUrl,
   };
 });
@@ -44,6 +45,7 @@ import {
   getOctokit,
   createContributionPullRequest,
   requestDeletionPullRequest,
+  uploadMediaAsset,
   MediaType,
 } from '@/lib/github';
 
@@ -143,7 +145,11 @@ describe('POST handler integration', () => {
     process.env.REPO_OWNER = 'test-owner';
     process.env.REPO_NAME = 'test-repo';
     (getOctokit as Mock).mockReturnValue({});
-    
+    (uploadMediaAsset as Mock).mockImplementation(
+      async (_octokit: unknown, _config: unknown, data: { fileName: string }) =>
+        `https://github.com/o/r/releases/download/assets/${data.fileName}`
+    );
+
     // Mock global.fetch for media downloads
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
