@@ -5,6 +5,7 @@ import {
   createContributionPullRequest,
   requestDeletionPullRequest,
   inferMediaTypeFromUrl,
+  uploadMediaAsset,
   MediaType
 } from '@/lib/github';
 import { randomHex5 } from '@/lib/utils';
@@ -182,7 +183,7 @@ async function fetchDownloadResponse(url: string) {
   throw new Error('Too many media redirects');
 }
 
-async function downloadMedia(url: string): Promise<{ fileBase64: string; fileName: string; mediaType?: MediaType }> {
+async function downloadMedia(url: string): Promise<{ body: ArrayBuffer; contentType: string; fileName: string; mediaType?: MediaType }> {
   const { response, finalUrl } = await fetchDownloadResponse(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch media from URL: ${response.statusText}`);
@@ -209,7 +210,6 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
     throw new Error('File size exceeds 10MB limit');
   }
 
-  const fileBase64 = Buffer.from(buffer).toString('base64');
   const mediaType = detectedMediaType || inferredMediaType || undefined;
   
   let fileName = 'media-file';
@@ -223,7 +223,7 @@ async function downloadMedia(url: string): Promise<{ fileBase64: string; fileNam
     if (ext) fileName = `media-file.${ext}`;
   }
 
-  return { fileBase64, fileName, mediaType };
+  return { body: buffer, contentType: responseContentType, fileName, mediaType };
 }
 
 async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_OWNER: string, REPO_NAME: string }) {
@@ -273,38 +273,51 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
   const slug = buildContributionSlug({ title });
   let primaryMediaType = validation.mediaType;
 
-  const committedFiles: { fileName: string; fileBase64: string }[] = [];
   const mediaItems: { type: MediaType; src: string; cover: string }[] = [];
 
+  // Release 附件名在同一个 Release 内必须唯一，同投稿内的重名要先错开。
+  const usedNames = new Set<string>();
+  let dedupeIdx = 0;
+  const dedupe = (fileName: string) => {
+    if (!usedNames.has(fileName)) {
+      usedNames.add(fileName);
+      return fileName;
+    }
+
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const deduped = lastDotIndex > 0
+      ? `${fileName.slice(0, lastDotIndex)}-${dedupeIdx++}.${fileName.slice(lastDotIndex + 1)}`
+      : `${fileName}-${dedupeIdx++}`;
+    usedNames.add(deduped);
+    return deduped;
+  };
+
   for (const file of files) {
-    const fileBuffer = await file.arrayBuffer();
-    const fileBase64 = Buffer.from(fileBuffer).toString('base64');
+    const assetUrl = await uploadMediaAsset(octokit, config, {
+      slug,
+      fileName: dedupe(file.name),
+      contentType: file.type,
+      body: await file.arrayBuffer(),
+    });
     const type = inferMediaTypeFromFile(file);
-    committedFiles.push({ fileName: file.name, fileBase64 });
-    mediaItems.push({ type, src: file.name, cover: file.name });
+    mediaItems.push({ type, src: assetUrl, cover: assetUrl });
   }
 
-  // Handle media URLs (download and persist)
-  let urlIdx = 0;
+  // 外链媒体依然会被抓取下来做持久化，只是落点从仓库改成了 Release 附件，
+  // 这样既不怕原始外链失效，仓库也不会随投稿变大。
   for (const url of mediaUrls) {
     try {
       const downloaded = await downloadMedia(url);
       const type = downloaded.mediaType || inferMediaTypeFromUrl(url) || 'image';
 
-      let finalFileName = downloaded.fileName;
-      if (committedFiles.some(f => f.fileName === finalFileName)) {
-        const lastDotIndex = finalFileName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-          const base = finalFileName.slice(0, lastDotIndex);
-          const ext = finalFileName.slice(lastDotIndex + 1);
-          finalFileName = `${base}-${urlIdx++}.${ext}`;
-        } else {
-          finalFileName = `${finalFileName}-${urlIdx++}`;
-        }
-      }
+      const assetUrl = await uploadMediaAsset(octokit, config, {
+        slug,
+        fileName: dedupe(downloaded.fileName),
+        contentType: downloaded.contentType,
+        body: downloaded.body,
+      });
 
-      committedFiles.push({ fileName: finalFileName, fileBase64: downloaded.fileBase64 });
-      mediaItems.push({ type, src: finalFileName, cover: finalFileName });
+      mediaItems.push({ type, src: assetUrl, cover: assetUrl });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Media download failed';
       return NextResponse.json({ error: `无法下载媒体文件: ${message}` }, { status: 500 });
@@ -331,7 +344,7 @@ async function handleCreate(req: NextRequest, octokit: Octokit, config: { REPO_O
     sourceUrl,
     primaryMediaType,
     indexMd,
-    files: committedFiles,
+    assetCount: mediaItems.length,
   });
 
   return NextResponse.json({ success: true, prUrl: pr.html_url });
