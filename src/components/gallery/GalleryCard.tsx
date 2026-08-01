@@ -8,7 +8,7 @@ import {
   isVideoAsset,
   safelyPlayVideo,
 } from '@/lib/gallery';
-import { IconCopy } from '@/components/icons';
+import { IconCopy, IconHeart, IconHeartFilled } from '@/components/icons';
 import { useVideoPreview } from '@/lib/hooks/useVideoPreview';
 
 interface GalleryCardProps {
@@ -16,6 +16,8 @@ interface GalleryCardProps {
   onSelect: (item: GalleryItem) => void;
   onCopy: (text: string, slug: string) => void;
   isCopied: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: (slug: string) => void;
 }
 
 export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
@@ -23,6 +25,8 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
   onSelect,
   onCopy,
   isCopied,
+  isFavorite,
+  onToggleFavorite,
 }) => {
   const coverUrl = getGalleryMediaUrl(item, 'cover');
   const srcUrl = getGalleryMediaUrl(item, 'src');
@@ -83,14 +87,27 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
           </div>
         )}
 
-        {isVideo ? <div className="video-badge">Motion</div> : null}
-        {!isVideo && item.media.length > 1 ? <div className="video-badge">{item.media.length} Photos</div> : null}
+        {isVideo ? <div className="video-badge">视频</div> : null}
+        {!isVideo && item.media.length > 1 ? <div className="video-badge">{item.media.length} 图</div> : null}
 
         <div className="card-overlay">
           <div className="card-overlay-top">
             {item.model ? (
               <div data-testid={`model-badge-${item.slug}`} className="model-tag">{item.model}</div>
             ) : <span />}
+            <button
+              type="button"
+              aria-label={isFavorite ? `取消收藏 ${item.slug}` : `收藏 ${item.slug}`}
+              aria-pressed={isFavorite}
+              data-testid={`favorite-toggle-${item.slug}`}
+              className={`favorite-btn min-h-[36px] inline-flex items-center justify-center size-9 rounded-full backdrop-blur-md transition-all ${isFavorite ? 'is-active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(item.slug);
+              }}
+            >
+              {isFavorite ? <IconHeartFilled size={14} /> : <IconHeart size={14} />}
+            </button>
           </div>
 
           <div className="card-overlay-bottom">
@@ -100,14 +117,14 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
                 <span>{item.title || item.slug}</span>
               </div>
               <button
-                aria-label={`${item.slug} quick copy`}
+                aria-label={`${item.slug} 快速复制提示词`}
                 className="copy-btn min-h-[44px] inline-flex items-center gap-1 px-3 py-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   onCopy(item.content, item.slug);
                 }}
               >
-                <IconCopy size={12} /> {isCopied ? 'SUCCESS ✓' : 'Copy'}
+                <IconCopy size={12} /> {isCopied ? '已复制 ✓' : '复制'}
               </button>
             </div>
           </div>

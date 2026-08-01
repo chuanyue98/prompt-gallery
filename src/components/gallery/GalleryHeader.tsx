@@ -1,28 +1,29 @@
 'use client';
 
 import React from 'react';
-import { IconFlame } from '@/components/icons';
+import { IconFlame, IconHeart, IconHeartFilled } from '@/components/icons';
+import type { CategoryFilter } from '@/lib/hooks/useUrlState';
 
 interface GalleryHeaderProps {
-  search: string;
-  onSearchChange: (value: string) => void;
-  category: 'all' | 'video' | 'image';
-  onCategoryChange: (cat: 'all' | 'video' | 'image') => void;
+  category: CategoryFilter;
+  onCategoryChange: (cat: CategoryFilter) => void;
+  favoritesOnly: boolean;
+  onFavoritesOnlyChange: (favs: boolean) => void;
   totalCount?: number;
   filteredCount?: number;
 }
 
-const CATEGORIES = [
+const CATEGORIES: { id: CategoryFilter; label: string }[] = [
   { id: 'all', label: '全部' },
   { id: 'video', label: '视频' },
   { id: 'image', label: '图片' },
-] as const;
+];
 
 export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
-  search,
-  onSearchChange,
   category,
   onCategoryChange,
+  favoritesOnly,
+  onFavoritesOnlyChange,
   totalCount,
   filteredCount,
 }) => {
@@ -31,8 +32,8 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
   return (
     <div className="catstrip">
       <div className="cats" data-testid="gallery-category-switcher">
-        <span className="cat trending on" aria-label="Trending collection">
-          <IconFlame size={13} /> Trending
+        <span className="cat trending on" aria-label="热门合集">
+          <IconFlame size={13} /> 热门
         </span>
         {CATEGORIES.map((cat) => (
           <button
@@ -45,20 +46,20 @@ export const GalleryHeader: React.FC<GalleryHeaderProps> = ({
           </button>
         ))}
         <div className="cat-divider" />
-        <div className="search search-inline">
-          <input
-            data-testid="gallery-search"
-            aria-label="筛选图库内容"
-            type="text"
-            value={search}
-            placeholder="搜索灵感 (SEARCH INSPIRATION)..."
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => onFavoritesOnlyChange(!favoritesOnly)}
+          aria-pressed={favoritesOnly}
+          data-testid="favorites-filter-toggle"
+          className={`cat min-h-[44px] ${favoritesOnly ? 'on fav-active' : ''}`}
+        >
+          {favoritesOnly ? <IconHeartFilled size={13} /> : <IconHeart size={13} />}
+          收藏
+        </button>
       </div>
 
       <div className="catstrip-right">
-        <span className="counter">{count.toLocaleString()} prompts</span>
+        <span className="counter">{count.toLocaleString()} 个作品</span>
       </div>
     </div>
   );

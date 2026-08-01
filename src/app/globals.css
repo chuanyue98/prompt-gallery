@@ -955,3 +955,169 @@ body.lightbox-active nav.fixed {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer { animation: none; }
 }
+/* === P1 UX Efficiency Additions === */
+
+/* Wide-screen adaptation: 2K/4K support */
+@media (min-width: 1600px) {
+  .masonry { column-count: 5 !important; }
+}
+@media (min-width: 2000px) {
+  .masonry { column-count: 6 !important; }
+  .main { max-width: 1920px; }
+  .topnav-inner { max-width: 1920px; }
+}
+
+/* Search keyboard hint */
+.search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  pointer-events: none;
+  user-select: none;
+}
+@media (max-width: 640px) {
+  .search-kbd { display: none; }
+}
+
+/* Favorite button (card overlay) */
+.favorite-btn {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.favorite-btn:hover {
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.55);
+}
+.favorite-btn.is-active {
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.15);
+  border-color: rgba(255, 77, 109, 0.35);
+}
+
+/* Favorite button (modal header) */
+.favorite-btn-modal {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.favorite-btn-modal:hover {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.35);
+}
+.favorite-btn-modal.is-active {
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.12);
+}
+
+/* Favorites filter chip active state */
+.cat.fav-active {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.35);
+  background: rgba(255, 77, 109, 0.1);
+}
+/* Card overlay top row layout */
+.card-overlay-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: auto;
+}
+
+/* Shortcut hint text in modal */
+.shortcut-hint {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface-panel);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Success surface for delete request */
+.theme-success-surface {
+  background: rgba(72, 187, 120, 0.12);
+  border: 1px solid rgba(72, 187, 120, 0.3);
+  color: rgb(72, 187, 120);
+}
+
+/* Chip style for quick-select buttons */
+.theme-chip {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+.theme-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Theme input style */
+.theme-input {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.theme-input:focus {
+  border-color: var(--accent);
+}
+
+/* Contribute modal busy state */
+.is-busy {
+  pointer-events: none;
+}
+
+/* Brand tag styling */
+.brand-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Cat divider */
+.cat-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-subtle);
+  margin: 0 4px;
+  align-self: center;
+}
+
+/* Catstrip right counter */
+.catstrip-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.catstrip-right .counter {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* Modal CTA row layout */
+.modal-cta-row {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}

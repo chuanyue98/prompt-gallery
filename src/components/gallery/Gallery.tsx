@@ -6,6 +6,8 @@ import type { GalleryItem } from '@/types/gallery';
 import { copyToClipboard, fetchWithTimeout } from '@/lib/utils';
 import { showToast } from '@/components/ui/Toast';
 import { filterGalleryItems, getGalleryMediaUrl, isExternalUrl, isVideoAsset } from '@/lib/gallery';
+import { useFavorites } from '@/lib/hooks/useFavorites';
+import { useUrlState } from '@/lib/hooks/useUrlState';
 
 import GalleryHeader from './GalleryHeader';
 import GalleryCard from './GalleryCard';
@@ -56,7 +58,7 @@ function Hero({
       <div className="hero-grad" />
       <div className="hero-content">
         <div className="hero-tag">
-          <span className="dot" /> Editor&apos;s pick / This week
+          <span className="dot" /> 编辑精选 / 本周推荐
         </div>
         <h2 className="hero-title">{item.title || item.slug}</h2>
         <p className="hero-prompt">{item.description}</p>
@@ -72,7 +74,7 @@ function Hero({
               onCopy(item);
             }}
           >
-            Copy prompt
+            复制提示词
           </button>
         </div>
       </div>
@@ -83,14 +85,13 @@ function Hero({
 interface GalleryProps {
   search?: string;
   onSearchChange?: (value: string) => void;
+  favoritesOnly?: boolean;
 }
 
-export default function Gallery({ search: controlledSearch, onSearchChange }: GalleryProps = {}) {
+export default function Gallery({ search: controlledSearch, onSearchChange, favoritesOnly: controlledFavoritesOnly }: GalleryProps = {}) {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [internalSearch, setInternalSearch] = useState('');
-  const [category, setCategory] = useState<'all' | 'video' | 'image'>('all');
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -98,7 +99,23 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deletePrUrl, setDeletePrUrl] = useState<string | null>(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const urlState = useUrlState();
+
+  const search = controlledSearch ?? urlState.search;
+  const category = urlState.category;
+  const favoritesOnly = controlledFavoritesOnly ?? urlState.favoritesOnly;
+
+  const handleSearchChange = (value: string) => {
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else {
+      urlState.setSearch(value);
+    }
+  };
 
   const loadGalleryData = useCallback(async () => {
     setIsLoading(true);
@@ -145,7 +162,17 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
     };
   }, [selectedItem, isLightboxOpen]);
 
-  const handleCopy = useCallback(async (text: string, slug: string) => {
+  const handleCopySilent = useCallback(async (text: string, slug: string) => {
+    if (await copyToClipboard(text)) {
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 2000);
+      return true;
+    }
+    showToast('复制失败，请手动选择', 'error');
+    return false;
+  }, []);
+
+  const handleCopyToast = useCallback(async (text: string, slug: string) => {
     if (await copyToClipboard(text)) {
       setCopiedSlug(slug);
       showToast('已复制到剪贴板', 'success');
@@ -180,6 +207,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
       }
 
       setDeleteSuccess(true);
+      setDeletePrUrl(result.prUrl || null);
       setDeleteReason('');
       setDeleteError(null);
       showToast('下架申请已提交', 'success');
@@ -191,32 +219,39 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
     }
   }, [deleteReason]);
 
-  const search = controlledSearch ?? internalSearch;
-  const setSearch = (value: string) => {
-    if (controlledSearch === undefined) {
-      setInternalSearch(value);
+  const filteredItems = useMemo(() => {
+    let result = filterGalleryItems(items, search, category);
+    if (favoritesOnly) {
+      result = result.filter((item) => isFavorite(item.slug));
     }
-    if (onSearchChange) {
-      onSearchChange(value);
-    }
-  };
-  const filteredItems = useMemo(() => filterGalleryItems(items, search, category), [items, search, category]);
-  const hasActiveFilter = search.trim() !== '' || category !== 'all';
+    return result;
+  }, [items, search, category, favoritesOnly, isFavorite]);
+
+  const hasActiveFilter = search.trim() !== '' || category !== 'all' || favoritesOnly;
   const heroItem = !hasActiveFilter && filteredItems.length > 0 ? filteredItems[0] : null;
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setShowDeleteForm(false);
+    setIsLightboxOpen(false);
+    setDeleteSuccess(false);
+    setDeletePrUrl(null);
+    setDeleteError(null);
+  };
 
   return (
     <div className="main">
       <Hero
         item={heroItem}
         onOpen={setSelectedItem}
-        onCopy={(item) => handleCopy(item.content, item.slug)}
+        onCopy={(item) => handleCopyToast(item.content, item.slug)}
       />
 
       <GalleryHeader
-        search={search}
-        onSearchChange={setSearch}
         category={category}
-        onCategoryChange={setCategory}
+        onCategoryChange={urlState.setCategory}
+        favoritesOnly={favoritesOnly}
+        onFavoritesOnlyChange={urlState.setFavoritesOnly}
         totalCount={isLoading ? undefined : items.length}
         filteredCount={isLoading ? undefined : filteredItems.length}
       />
@@ -238,8 +273,26 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
 
       {!isLoading && !loadError && filteredItems.length === 0 ? (
         <div className="empty">
-          <div className="empty-t">Nothing matches that</div>
-          <div className="empty-s">{items.length === 0 ? '当前还没有可展示的内容。' : '没有匹配当前筛选条件的内容。'}</div>
+          <div className="empty-t">{favoritesOnly ? '收藏夹为空' : '没有匹配的内容'}</div>
+          <div className="empty-s">
+            {items.length === 0
+              ? '当前还没有可展示的内容。'
+              : favoritesOnly
+                ? '点击卡片上的爱心收藏作品，这里会显示你收藏的内容。'
+                : '试试其他关键词，或清空筛选条件。'}
+          </div>
+          {hasActiveFilter && !favoritesOnly ? (
+            <button
+              type="button"
+              onClick={() => {
+                handleSearchChange('');
+                urlState.setCategory('all');
+              }}
+              className="theme-secondary-button mt-4 inline-flex min-h-[44px] items-center rounded-full px-6 py-2.5 text-xs font-black uppercase tracking-[0.18em]"
+            >
+              清空筛选
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -260,8 +313,10 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
               key={item.slug}
               item={item}
               onSelect={setSelectedItem}
-              onCopy={handleCopy}
+              onCopy={handleCopySilent}
               isCopied={copiedSlug === item.slug}
+              isFavorite={isFavorite(item.slug)}
+              onToggleFavorite={toggleFavorite}
             />
           ))}
         </div>
@@ -270,14 +325,12 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
       {selectedItem ? (
         <DetailModal
           item={selectedItem}
-          onClose={() => {
-            setSelectedItem(null);
-            setShowDeleteForm(false);
-            setIsLightboxOpen(false);
-          }}
-          onCopy={handleCopy}
+          onClose={handleCloseModal}
+          onCopy={handleCopyToast}
           copiedSlug={copiedSlug}
           onLightboxOpen={() => setIsLightboxOpen(true)}
+          isFavorite={isFavorite(selectedItem.slug)}
+          onToggleFavorite={toggleFavorite}
           deleteError={deleteError}
           showDeleteForm={showDeleteForm}
           setShowDeleteForm={setShowDeleteForm}
@@ -286,6 +339,7 @@ export default function Gallery({ search: controlledSearch, onSearchChange }: Ga
           onDeleteRequest={handleDeleteRequest}
           isDeleting={isDeleting}
           deleteSuccess={deleteSuccess}
+          deletePrUrl={deletePrUrl}
         />
       ) : null}
 

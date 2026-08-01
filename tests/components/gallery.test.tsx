@@ -139,26 +139,35 @@ describe('Gallery component', () => {
 
   it('loads gallery items and filters them in the UI', async () => {
     const user = userEvent.setup();
-    render(<Gallery />);
+    function Controlled() {
+      const [search, setSearch] = useState('');
+      return (
+        <>
+          <input data-testid="gallery-search" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Gallery search={search} onSearchChange={setSearch} />
+        </>
+      );
+    }
+    render(<Controlled />);
     expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
-    
+
     await user.click(screen.getByRole('button', { name: '视频' }));
     expect(screen.queryByRole('button', { name: '打开作品详情: image-item' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '全部' }));
-    await user.type(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'), 'nomatch');
-    expect(await screen.findByText('没有匹配当前筛选条件的内容。')).toBeInTheDocument();
-    
+    await user.type(screen.getByTestId('gallery-search'), 'nomatch');
+    expect(await screen.findByText('没有匹配的内容')).toBeInTheDocument();
+
     // When no matches, hero should be null per our change
     expect(screen.queryByTestId('hero-video')).not.toBeInTheDocument();
     expect(screen.queryByTestId('hero-image')).not.toBeInTheDocument();
 
     // Clear search and try a search that matches something to ensure the message disappears
-    await user.clear(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'));
+    await user.clear(screen.getByTestId('gallery-search'));
     await waitFor(() => {
-      expect(screen.queryByText('没有匹配当前筛选条件的内容。')).not.toBeInTheDocument();
+      expect(screen.queryByText('没有匹配的内容')).not.toBeInTheDocument();
     });
-  });
+  })
 
   it('renders video hero for video items', async () => {
     render(<Gallery />);
@@ -185,10 +194,19 @@ describe('Gallery component', () => {
   it('keeps internal search working when only onSearchChange is provided', async () => {
     const user = userEvent.setup();
     const onSearchChange = vi.fn();
-    render(<Gallery onSearchChange={onSearchChange} />);
+    function Controlled() {
+      const [search, setSearch] = useState('');
+      return (
+        <>
+          <input data-testid="gallery-search" value={search} onChange={(e) => { setSearch(e.target.value); onSearchChange(e.target.value); }} />
+          <Gallery search={search} onSearchChange={setSearch} />
+        </>
+      );
+    }
+    render(<Controlled />);
 
     expect(await screen.findByRole('button', { name: '打开作品详情: video-item' })).toBeInTheDocument();
-    await user.type(screen.getByPlaceholderText('搜索灵感 (SEARCH INSPIRATION)...'), 'gpt-image-1');
+    await user.type(screen.getByTestId('gallery-search'), 'gpt-image-1');
 
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: '打开作品详情: video-item' })).not.toBeInTheDocument();
@@ -298,8 +316,8 @@ describe('Gallery component', () => {
     const user = userEvent.setup();
     render(<Gallery />);
     await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
-    await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
-    await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Broken');
+    await user.click(screen.getByRole('button', { name: '申请下架' }));
+    await user.type(screen.getByPlaceholderText(/选择或填写原因/), 'Broken');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
     
     await waitFor(() => {
@@ -366,56 +384,56 @@ describe('GalleryCard direct tests', () => {
   });
 
   it('does not crash when media is missing', () => {
-    render(<GalleryCard item={emptyMediaItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={emptyMediaItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     expect(screen.getByText('暂无媒体内容')).toBeInTheDocument();
   });
 
   it('shows SUCCESS text when isCopied is true', () => {
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={true} />);
-    expect(screen.getByText('SUCCESS ✓')).toBeInTheDocument();
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={true} isFavorite={false} onToggleFavorite={vi.fn()} />);
+    expect(screen.getByText('已复制 ✓')).toBeInTheDocument();
   });
 
   it('triggers onCopy when quick copy button is clicked', async () => {
     const user = userEvent.setup();
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
-    await user.click(screen.getByRole('button', { name: 'video-item quick copy' }));
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: 'video-item 快速复制提示词' }));
     expect(onCopy).toHaveBeenCalledWith(galleryItems[0].content, 'video-item');
   });
 
   it('selects item on Enter keydown', () => {
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: 'Enter' });
     expect(onSelect).toHaveBeenCalledWith(galleryItems[0]);
   });
 
   it('selects item on Space keydown', () => {
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: ' ' });
     expect(onSelect).toHaveBeenCalledWith(galleryItems[0]);
   });
 
   it('ignores other key presses', () => {
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     const card = screen.getByTestId('gallery-card-video-item');
     fireEvent.keyDown(card, { key: 'Tab' });
     expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('renders external URL cover as img element', () => {
-    render(<GalleryCard item={externalImageItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={externalImageItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     const img = document.querySelector('img[src="https://example.com/img.png"]');
     expect(img).toBeInTheDocument();
   });
 
   it('does not render model badge when model is absent', () => {
-    render(<GalleryCard item={externalImageItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={externalImageItem} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     expect(screen.queryByTestId('model-badge-external-item')).not.toBeInTheDocument();
   });
 
   it('triggers video mouseEnter and mouseLeave handlers', () => {
-    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} />);
+    render(<GalleryCard item={galleryItems[0]} onSelect={onSelect} onCopy={onCopy} isCopied={false} isFavorite={false} onToggleFavorite={vi.fn()} />);
     const videos = document.querySelectorAll('video');
     expect(videos[0]).toHaveAttribute('preload', 'metadata');
     // The hover overlay video (second video) has the mouse handlers
@@ -465,6 +483,9 @@ describe('DetailModal direct tests', () => {
     onDeleteRequest: vi.fn(),
     isDeleting: false,
     deleteSuccess: false,
+    isFavorite: false,
+    onToggleFavorite: vi.fn(),
+    deletePrUrl: null,
   };
 
   beforeEach(() => {
@@ -515,17 +536,17 @@ describe('DetailModal direct tests', () => {
 
   it('shows COPIED state when copiedSlug is modal', () => {
     render(<DetailModal item={galleryItems[1]} {...baseProps} copiedSlug="modal" />);
-    expect(screen.getByText('COPIED ✓')).toBeInTheDocument();
+    expect(screen.getByText('已复制 ✓')).toBeInTheDocument();
   });
 
   it('shows Source link when sourceUrl is present', () => {
     render(<DetailModal item={galleryItems[1]} {...baseProps} />);
-    expect(screen.getByRole('link', { name: 'Source' })).toHaveAttribute('href', 'https://example.com/source');
+    expect(screen.getByRole('link', { name: '查看原帖 ↗' })).toHaveAttribute('href', 'https://example.com/source');
   });
 
   it('does not render unsafe Source links', () => {
     render(<DetailModal item={{ ...galleryItems[1], sourceUrl: 'javascript:alert(1)' }} {...baseProps} />);
-    expect(screen.queryByRole('link', { name: 'Source' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '查看原帖 ↗' })).not.toBeInTheDocument();
   });
 
   it('shows delete form and cancel button works', async () => {
@@ -589,8 +610,8 @@ describe('Gallery error and edge cases', () => {
     render(<Gallery />);
     await user.click(await screen.findByRole('button', { name: '打开作品详情: image-item' }));
     await user.click(screen.getByRole('button', { name: '复制详情提示词' }));
-    // Button text should remain COPY PROMPT (not COPIED ✓) since copy failed
-    expect(screen.getByRole('button', { name: '复制详情提示词' })).toHaveTextContent('COPY PROMPT');
+    // Button text should remain 复制提示词 (not 已复制 ✓) since copy failed
+    expect(screen.getByRole('button', { name: '复制详情提示词' })).toHaveTextContent('复制提示词');
     vi.unstubAllGlobals();
   });
 
@@ -603,7 +624,7 @@ describe('Gallery error and edge cases', () => {
     render(<Gallery />);
     await user.click(await screen.findByRole('button', { name: '打开作品详情: image-item' }));
     await user.click(screen.getByRole('button', { name: '复制详情提示词' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: '复制详情提示词' })).toHaveTextContent('COPIED ✓'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '复制详情提示词' })).toHaveTextContent('已复制 ✓'));
     vi.unstubAllGlobals();
   });
 
@@ -665,8 +686,8 @@ describe('Gallery error and edge cases', () => {
     const user = userEvent.setup();
     render(<Gallery />);
     await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
-    await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
-    await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Reason');
+    await user.click(screen.getByRole('button', { name: '申请下架' }));
+    await user.type(screen.getByPlaceholderText(/选择或填写原因/), 'Reason');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('权限不足');
     vi.unstubAllGlobals();
@@ -680,8 +701,8 @@ describe('Gallery error and edge cases', () => {
     const user = userEvent.setup();
     render(<Gallery />);
     await user.click(await screen.findByRole('button', { name: '打开作品详情: video-item' }));
-    await user.click(screen.getByRole('button', { name: '申请下架 (TAKE DOWN)' }));
-    await user.type(screen.getByPlaceholderText(/例如：图片失效/), 'Reason');
+    await user.click(screen.getByRole('button', { name: '申请下架' }));
+    await user.type(screen.getByPlaceholderText(/选择或填写原因/), 'Reason');
     await user.click(screen.getByRole('button', { name: '确认申请' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Network crash');
     vi.unstubAllGlobals();
@@ -706,7 +727,7 @@ describe('P0 UX improvements', () => {
 
   it('DetailModal closes on Escape', () => {
     const onClose = vi.fn();
-    render(<DetailModal item={galleryItems[1]} onClose={onClose} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    render(<DetailModal item={galleryItems[1]} onClose={onClose} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} isFavorite={false} onToggleFavorite={vi.fn()} deletePrUrl={null} />);
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
@@ -725,7 +746,12 @@ describe('P0 UX improvements', () => {
     const user = userEvent.setup();
     function Controlled() {
       const [s, setS] = useState('');
-      return <Gallery search={s} onSearchChange={setS} />;
+      return (
+        <>
+          <input data-testid="gallery-search" value={s} onChange={(e) => setS(e.target.value)} />
+          <Gallery search={s} onSearchChange={setS} />
+        </>
+      );
     }
     render(<Controlled />);
     await screen.findByTestId('gallery-card-video-item');
@@ -769,7 +795,7 @@ describe('P0 UX improvements', () => {
       ],
       content: '### Prompt\nMulti',
     };
-    const { container } = render(<DetailModal item={multiMediaItem} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    const { container } = render(<DetailModal item={multiMediaItem} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={vi.fn()} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} isFavorite={false} onToggleFavorite={vi.fn()} deletePrUrl={null} />);
     const mediaImg = container.querySelector('img') as HTMLImageElement | null;
     const beforeSrc = mediaImg?.getAttribute('src');
     fireEvent.keyDown(document, { key: 'ArrowRight' });
@@ -782,7 +808,7 @@ describe('P0 UX improvements', () => {
 
   it('DetailModal opens lightbox on zoom button click', () => {
     const onLightboxOpen = vi.fn();
-    const { container } = render(<DetailModal item={galleryItems[1]} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={onLightboxOpen} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} />);
+    const { container } = render(<DetailModal item={galleryItems[1]} onClose={vi.fn()} onCopy={vi.fn()} copiedSlug={null} onLightboxOpen={onLightboxOpen} deleteError={null} showDeleteForm={false} setShowDeleteForm={vi.fn()} deleteReason='' setDeleteReason={vi.fn()} onDeleteRequest={vi.fn()} isDeleting={false} deleteSuccess={false} isFavorite={false} onToggleFavorite={vi.fn()} deletePrUrl={null} />);
     const zoomBtn = container.querySelector('.modal-play') as HTMLButtonElement | null;
     expect(zoomBtn).not.toBeNull();
     fireEvent.click(zoomBtn!);
@@ -794,7 +820,7 @@ describe('P0 UX improvements', () => {
     const user = userEvent.setup();
     render(<Gallery />);
     await screen.findByTestId('gallery-card-video-item');
-    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    await user.click(screen.getByRole('button', { name: '复制提示词' }));
     expect(copyToClipboard).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

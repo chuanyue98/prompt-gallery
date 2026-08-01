@@ -34,6 +34,9 @@ describe('Multi-media Navigation', () => {
     onDeleteRequest: vi.fn(),
     isDeleting: false,
     deleteSuccess: false,
+    isFavorite: false,
+    onToggleFavorite: vi.fn(),
+    deletePrUrl: null,
   };
 
   it('navigates multiple media in DetailModal', async () => {
@@ -45,22 +48,22 @@ describe('Multi-media Navigation', () => {
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
 
     // Click next: second media is video
-    await user.click(screen.getByLabelText('Next media'));
+    await user.click(screen.getByLabelText('下一张'));
     expect(document.querySelector('video')).toHaveAttribute('src', '/media/multi/vid1.mp4');
     expect(screen.getByText('2 / 3')).toBeInTheDocument();
 
     // Click next: third media is image
-    await user.click(screen.getByLabelText('Next media'));
+    await user.click(screen.getByLabelText('下一张'));
     expect(screen.getByAltText(/Multi media description/)).toHaveAttribute('src', '/media/multi/img2.png');
     expect(screen.getByText('3 / 3')).toBeInTheDocument();
 
     // Click next: back to first image (loop)
-    await user.click(screen.getByLabelText('Next media'));
+    await user.click(screen.getByLabelText('下一张'));
     expect(screen.getByAltText(/Multi media description/)).toHaveAttribute('src', '/media/multi/img1.png');
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
 
     // Click prev: to third image
-    await user.click(screen.getByLabelText('Previous media'));
+    await user.click(screen.getByLabelText('上一张'));
     expect(screen.getByText('3 / 3')).toBeInTheDocument();
   });
 

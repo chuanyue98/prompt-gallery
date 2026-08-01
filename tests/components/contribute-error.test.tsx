@@ -1,13 +1,17 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ContributeModal from '@/components/gallery/ContributeModal';
 import { ContributeForm } from '@/components/gallery/ContributeForm';
 import { ContributePreview } from '@/components/gallery/ContributePreview';
 import ContributeSuccess from '@/components/gallery/ContributeSuccess';
 
 describe('ContributeModal validation and errors', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('shows validation error if title is empty', async () => {
     render(<ContributeModal isOpen onClose={() => {}} />);
     
@@ -396,24 +400,27 @@ describe('DetailModal multi-media navigation', () => {
         onDeleteRequest={vi.fn()}
         isDeleting={false}
         deleteSuccess={false}
+        isFavorite={false}
+        onToggleFavorite={vi.fn()}
+        deletePrUrl={null}
       />
     );
 
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
     
     // Next image
-    await user.click(screen.getByRole('button', { name: 'Next media' }));
+    await user.click(screen.getByRole('button', { name: '下一张' }));
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
 
     // Previous image (back to 1)
-    await user.click(screen.getByRole('button', { name: 'Previous media' }));
+    await user.click(screen.getByRole('button', { name: '上一张' }));
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 });
 
 describe('ContributeSuccess direct tests', () => {
   it('renders correctly with PR URL', () => {
-    render(<ContributeSuccess prUrl="https://github.com/pull/1" />);
+    render(<ContributeSuccess prUrl="https://github.com/pull/1" onClose={vi.fn()} />);
     expect(screen.getByText('投稿已发起')).toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAttribute('href', 'https://github.com/pull/1');
   });

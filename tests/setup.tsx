@@ -2,6 +2,8 @@ import { createElement, type ImgHTMLAttributes } from 'react';
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import { __resetUrlStateForTests } from '@/lib/hooks/useUrlState';
+import { __resetFavoritesForTests } from '@/lib/hooks/useFavorites';
 
 vi.mock('next/image', () => ({
   default: (props: ImgHTMLAttributes<HTMLImageElement>) => {
@@ -11,6 +13,11 @@ vi.mock('next/image', () => ({
 
 afterEach(() => {
   cleanup();
+  // 筛选条件同时活在 URL 和模块级共享状态里，
+  // 不重置的话上一个用例的筛选会漏进下一个用例。
+  window.history.replaceState(null, '', '/');
+  __resetUrlStateForTests();
+  __resetFavoritesForTests();
 });
 
 Object.defineProperty(window, 'alert', {
