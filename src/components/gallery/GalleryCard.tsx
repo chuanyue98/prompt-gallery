@@ -33,6 +33,8 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
   const primaryMediaType = getPrimaryMediaType(item);
   const isVideo = primaryMediaType === 'video' || (!primaryMediaType && isVideoAsset(srcUrl));
   const videoRef = useVideoPreview(isVideo);
+  // 左上角常驻着「视频 / N 图」徽章，hover 出现的模型名要往下让一行，否则会被压住。
+  const hasMediaBadge = isVideo || item.media.length > 1;
 
   const playVideoPreview = () => {
     if (videoRef.current) {
@@ -91,7 +93,7 @@ export const GalleryCard: React.FC<GalleryCardProps> = React.memo(({
         {!isVideo && item.media.length > 1 ? <div className="video-badge">{item.media.length} 图</div> : null}
 
         <div className="card-overlay">
-          <div className="card-overlay-top">
+          <div className={`card-overlay-top${hasMediaBadge ? ' has-media-badge' : ''}`}>
             {item.model ? (
               <div data-testid={`model-badge-${item.slug}`} className="model-tag">{item.model}</div>
             ) : <span />}

@@ -543,6 +543,16 @@ body.lightbox-active nav.fixed {
   gap: 10px;
 }
 
+/*
+ * .video-badge 是常驻的绝对定位元素，钉在左上角 (12px, 12px)；
+ * .model-tag 是 hover 才出现的 overlay 首个子元素，落点几乎相同。
+ * 两者会重叠（badge 的 z-index 更高，会把模型名压住），
+ * 因此有徽章时让模型名往下让出一行。
+ */
+.card-overlay-top.has-media-badge .model-tag {
+  margin-top: 30px;
+}
+
 .model-tag {
   font-size: 10.5px;
   font-weight: 500;
