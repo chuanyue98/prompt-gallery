@@ -491,14 +491,14 @@ body.lightbox-active nav.fixed {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
-  background: #0a0a0d;
+  /* 媒体加载完成前的占位底色，跟随主题；写死深色会在浅色主题下露出黑块。 */
+  background: var(--surface-muted);
   cursor: pointer;
 }
 
 .card-media {
   position: relative;
   width: 100%;
-  min-height: 260px;
 }
 
 .card-media img,
